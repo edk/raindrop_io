@@ -1,0 +1,290 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.raindrop.io/rest/v1/user
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Authorization:
+      - Bearer <BEARER_TOKEN>
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Wed, 17 Apr 2024 19:02:38 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Transfer-Encoding:
+      - chunked
+      Connection:
+      - keep-alive
+      X-Powered-By:
+      - Express
+      Server-Timing:
+      - dc;desc=eu
+      - get;dur=8.436
+      - total;dur=18.304
+      Cache-Control:
+      - private
+      X-Ratelimit-Limit:
+      - '120'
+      X-Ratelimit-Remaining:
+      - '119'
+      X-Ratelimit-Reset:
+      - '1713380618'
+      Etag:
+      - W/"3a3-nxeOJ5nGg5f4IUQjs4Og9FmlIvg"
+      Cf-Cache-Status:
+      - DYNAMIC
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 875eaba87f2acee9-SJC
+      Alt-Svc:
+      - h3=":443"; ma=86400
+    body:
+      encoding: ASCII-8BIT
+      string: '{"result":true,"user":{"tfa":{"enabled":false},"files":{"used":0,"size":100000000,"lastCheckPoint":"2023-07-31T22:45:12.130Z"},"_id":"123456789","fullName":"User
+        123","name":"user123","email":"user123@example.com","avatar":"","pro":false,"groups":[{"title":"Collections","hidden":false,"sort":0,"collections":[43358979,43330903,36370053,43358978]}],"lastAction":"2024-04-17T18:20:10.725Z","lastVisit":"2024-04-17T02:35:02.596Z","registered":"2023-07-31T22:45:12.131Z","lastUpdate":"2024-04-17T18:20:10.725Z","config":{"default_collection_view":"simple","raindrops_hide":["list_excerpt","simple_excerpt","grid_excerpt","masonry_excerpt"],"raindrops_buttons":["select","preview","edit","remove"],"raindrops_search_by_score":true,"raindrops_search_incollection":false,"broken_level":"default","font_size":0,"add_default_collection":-1,"acknowledge":[],"last_collection":-1,"add_auto_save":true,"nested_view_legacy":true},"password":true}}'
+  recorded_at: Wed, 17 Apr 2024 19:02:38 GMT
+- request:
+    method: get
+    uri: https://api.raindrop.io/rest/v1/collection/43358979
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Authorization:
+      - Bearer <BEARER_TOKEN>
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Wed, 17 Apr 2024 19:02:38 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Transfer-Encoding:
+      - chunked
+      Connection:
+      - keep-alive
+      X-Powered-By:
+      - Express
+      Server-Timing:
+      - dc;desc=eu
+      - total;dur=22.822
+      Cache-Control:
+      - private
+      X-Ratelimit-Limit:
+      - '120'
+      X-Ratelimit-Remaining:
+      - '118'
+      X-Ratelimit-Reset:
+      - '1713380618'
+      Etag:
+      - W/"1d5-yegiflEFZgryhRz4ZHTbV1H48to"
+      Cf-Cache-Status:
+      - DYNAMIC
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 875eaba9fa9316a0-SJC
+      Alt-Svc:
+      - h3=":443"; ma=86400
+    body:
+      encoding: ASCII-8BIT
+      string: '{"result":true,"item":{"_id":"123456789","title":"Interesting","description":"","user":{"$ref":"users","$id":1629134},"public":false,"view":"simple","count":0,"cover":[],"sort":0,"expanded":true,"creatorRef":{"_id":"123456789","name":"user123","email":"user123@example.com"},"lastAction":"2024-04-17T18:20:09.703Z","created":"2024-04-17T18:20:09.704Z","lastUpdate":"2024-04-17T18:20:09.704Z","slug":"interesting","access":{"for":1629134,"level":4,"root":false,"draggable":true},"author":true}}'
+  recorded_at: Wed, 17 Apr 2024 19:02:38 GMT
+- request:
+    method: get
+    uri: https://api.raindrop.io/rest/v1/collection/43330903
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Authorization:
+      - Bearer <BEARER_TOKEN>
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Wed, 17 Apr 2024 19:02:38 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Transfer-Encoding:
+      - chunked
+      Connection:
+      - keep-alive
+      X-Powered-By:
+      - Express
+      Server-Timing:
+      - dc;desc=eu
+      - total;dur=21.371
+      Cache-Control:
+      - private
+      X-Ratelimit-Limit:
+      - '120'
+      X-Ratelimit-Remaining:
+      - '117'
+      X-Ratelimit-Reset:
+      - '1713380618'
+      Etag:
+      - W/"1c7-iXZpHrjDmJoTnL1Nvc5RzZaPe34"
+      Cf-Cache-Status:
+      - DYNAMIC
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 875eababb88567f7-SJC
+      Alt-Svc:
+      - h3=":443"; ma=86400
+    body:
+      encoding: ASCII-8BIT
+      string: '{"result":true,"item":{"_id":"123456789","title":"tech","description":"","user":{"$ref":"users","$id":1629134},"public":false,"view":"simple","count":0,"cover":[],"sort":0,"expanded":true,"creatorRef":{"_id":"123456789","name":"user123","email":"user123@example.com"},"lastAction":"2024-04-16T17:19:12.919Z","created":"2024-04-16T17:19:12.943Z","lastUpdate":"2024-04-16T17:19:12.943Z","slug":"tech","access":{"for":1629134,"level":4,"root":false,"draggable":true},"author":true}}'
+  recorded_at: Wed, 17 Apr 2024 19:02:38 GMT
+- request:
+    method: get
+    uri: https://api.raindrop.io/rest/v1/collection/36370053
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Authorization:
+      - Bearer <BEARER_TOKEN>
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Wed, 17 Apr 2024 19:02:39 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Transfer-Encoding:
+      - chunked
+      Connection:
+      - keep-alive
+      X-Powered-By:
+      - Express
+      Server-Timing:
+      - dc;desc=eu
+      - total;dur=24.039
+      Cache-Control:
+      - private
+      X-Ratelimit-Limit:
+      - '120'
+      X-Ratelimit-Remaining:
+      - '116'
+      X-Ratelimit-Reset:
+      - '1713380618'
+      Etag:
+      - W/"1d2-vjQx9T3Yy/UnNHOMMrRefBBlvvQ"
+      Cf-Cache-Status:
+      - DYNAMIC
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 875eabad4db47e21-SJC
+      Alt-Svc:
+      - h3=":443"; ma=86400
+    body:
+      encoding: ASCII-8BIT
+      string: '{"result":true,"item":{"view":"list","_id":"123456789","title":"Unread","description":"","user":{"$ref":"users","$id":1629134},"public":false,"count":707,"cover":[],"expanded":true,"creatorRef":{"_id":"123456789","name":"user123","email":"user123@example.com"},"lastAction":"2023-09-07T23:39:51.888Z","created":"2023-07-31T22:47:02.382Z","lastUpdate":"2023-09-07T23:39:51.888Z","sort":36370053,"slug":"unread","access":{"for":1629134,"level":4,"root":false,"draggable":true},"author":true}}'
+  recorded_at: Wed, 17 Apr 2024 19:02:39 GMT
+- request:
+    method: get
+    uri: https://api.raindrop.io/rest/v1/collection/43358978
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Authorization:
+      - Bearer <BEARER_TOKEN>
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Wed, 17 Apr 2024 19:02:39 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Transfer-Encoding:
+      - chunked
+      Connection:
+      - keep-alive
+      X-Powered-By:
+      - Express
+      Server-Timing:
+      - dc;desc=eu
+      - total;dur=21.986
+      Cache-Control:
+      - private
+      X-Ratelimit-Limit:
+      - '120'
+      X-Ratelimit-Remaining:
+      - '115'
+      X-Ratelimit-Reset:
+      - '1713380618'
+      Etag:
+      - W/"1d5-cwtAxFSGS7MZIIvAryvgIDy79pA"
+      Cf-Cache-Status:
+      - DYNAMIC
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 875eabb19d08cfdd-SJC
+      Alt-Svc:
+      - h3=":443"; ma=86400
+    body:
+      encoding: ASCII-8BIT
+      string: '{"result":true,"item":{"_id":"123456789","title":"Interesting","description":"","user":{"$ref":"users","$id":1629134},"public":false,"view":"simple","count":0,"cover":[],"sort":0,"expanded":true,"creatorRef":{"_id":"123456789","name":"user123","email":"user123@example.com"},"lastAction":"2024-04-17T18:20:09.697Z","created":"2024-04-17T18:20:09.697Z","lastUpdate":"2024-04-17T18:20:09.697Z","slug":"interesting","access":{"for":1629134,"level":4,"root":false,"draggable":true},"author":true}}'
+  recorded_at: Wed, 17 Apr 2024 19:02:39 GMT
+recorded_with: VCR 6.2.0

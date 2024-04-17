@@ -1,0 +1,50 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.raindrop.io/rest/v1/collection/1234567890
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Authorization:
+      - Bearer
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+  response:
+    status:
+      code: 400
+      message: Bad Request
+    headers:
+      Date:
+      - Wed, 17 Apr 2024 16:22:59 GMT
+      Content-Length:
+      - '11'
+      Connection:
+      - keep-alive
+      X-Powered-By:
+      - Express
+      Server-Timing:
+      - dc;desc=eu
+      - total;dur=0.712
+      Cache-Control:
+      - private
+      Cf-Cache-Status:
+      - DYNAMIC
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 875dc1cdcd7bd045-SJC
+      Alt-Svc:
+      - h3=":443"; ma=86400
+    body:
+      encoding: UTF-8
+      string: Bad Request
+  recorded_at: Wed, 17 Apr 2024 16:22:59 GMT
+recorded_with: VCR 6.2.0

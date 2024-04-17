@@ -1,0 +1,61 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.raindrop.io/rest/v1/collections
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Authorization:
+      - Bearer <BEARER_TOKEN>
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Tue, 16 Apr 2024 17:34:23 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Transfer-Encoding:
+      - chunked
+      Connection:
+      - keep-alive
+      X-Powered-By:
+      - Express
+      Server-Timing:
+      - dc;desc=eu
+      - find_collections;dur=21.865
+      - total;dur=31.007
+      Cache-Control:
+      - private
+      X-Ratelimit-Limit:
+      - '120'
+      X-Ratelimit-Remaining:
+      - '119'
+      X-Ratelimit-Reset:
+      - '1713288923'
+      Etag:
+      - W/"386-ToMQBqW4lZGsp+ShoIKyp9rLS0g"
+      Cf-Cache-Status:
+      - DYNAMIC
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 8755ed01997e67dd-SJC
+      Alt-Svc:
+      - h3=":443"; ma=86400
+    body:
+      encoding: ASCII-8BIT
+      string: '{"result":true,"items":[{"view":"list","_id":"123456789","title":"Unread","description":"","user":{"$ref":"users","$id":1629134},"public":false,"count":707,"cover":[],"expanded":true,"creatorRef":{"_id":"123456789","name":"user123","email":""},"lastAction":"2023-09-07T23:39:51.888Z","created":"2023-07-31T22:47:02.382Z","lastUpdate":"2023-09-07T23:39:51.888Z","sort":36370053,"slug":"unread","access":{"for":1629134,"level":4,"root":false,"draggable":true},"author":true},{"_id":"123456789","title":"tech","description":"","user":{"$ref":"users","$id":1629134},"public":false,"view":"simple","count":0,"cover":[],"sort":0,"expanded":true,"creatorRef":{"_id":"123456789","name":"user123","email":""},"lastAction":"2024-04-16T17:19:12.919Z","created":"2024-04-16T17:19:12.943Z","lastUpdate":"2024-04-16T17:19:12.943Z","slug":"tech","access":{"for":1629134,"level":4,"root":false,"draggable":true},"author":true}]}'
+  recorded_at: Tue, 16 Apr 2024 17:34:23 GMT
+recorded_with: VCR 6.2.0

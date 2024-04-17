@@ -1,0 +1,65 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.raindrop.io/rest/v1/raindrop/768481303
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Authorization:
+      - Bearer <BEARER_TOKEN>
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Tue, 16 Apr 2024 17:34:23 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Transfer-Encoding:
+      - chunked
+      Connection:
+      - keep-alive
+      X-Powered-By:
+      - Express
+      Server-Timing:
+      - dc;desc=eu
+      - find_raindrop;dur=15.247
+      - total;dur=23.786
+      Cache-Control:
+      - private
+      X-Ratelimit-Limit:
+      - '120'
+      X-Ratelimit-Remaining:
+      - '118'
+      X-Ratelimit-Reset:
+      - '1713288923'
+      Etag:
+      - W/"4c8-SWngI2uyHWqKYfu0G63MWr50R7k"
+      Cf-Cache-Status:
+      - DYNAMIC
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 8755ed0339ab1701-SJC
+      Alt-Svc:
+      - h3=":443"; ma=86400
+    body:
+      encoding: ASCII-8BIT
+      string: '{"result":true,"item":{"_id":"123456789","link":"https://www.vikas.sh/post/how-i-got-into-deep-learning","title":"How
+        I got into deep learning","excerpt":"I ran an education company, Dataquest,
+        for 8 years. Last year, I got the itch to start building again. Deep learning
+        was always interesting to me, but I knew very little about it. I set out to
+        fix that problem.","note":"","type":"article","user":{"$ref":"users","$id":1629134},"cover":"https://og-image.vercel.app/**How%20I%20got%20into%20deep%20learning**?theme=light&md=1&fontSize=100px&images=https%3A%2F%2Fassets.vercel.com%2Fimage%2Fupload%2Ffront%2Fassets%2Fdesign%2Fhyper-color-logo.svg","media":[{"link":"https://og-image.vercel.app/**How%20I%20got%20into%20deep%20learning**?theme=light&md=1&fontSize=100px&images=https%3A%2F%2Fassets.vercel.com%2Fimage%2Fupload%2Ffront%2Fassets%2Fdesign%2Fhyper-color-logo.svg","type":"image"}],"tags":[],"important":false,"removed":false,"created":"2024-04-13T14:13:00.020Z","collection":{"$ref":"collections","$id":-1,"oid":-1},"highlights":[],"lastUpdate":"2024-04-13T14:13:00.206Z","domain":"vikas.sh","creatorRef":{"_id":"123456789","name":"user123","avatar":"","email":""},"sort":768481303,"collectionId":-1},"author":true}'
+  recorded_at: Tue, 16 Apr 2024 17:34:23 GMT
+recorded_with: VCR 6.2.0

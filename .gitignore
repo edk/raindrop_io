@@ -6,3 +6,5 @@
 /pkg/
 /spec/reports/
 /tmp/
+*.swp
+replace_sensitive_info.json
