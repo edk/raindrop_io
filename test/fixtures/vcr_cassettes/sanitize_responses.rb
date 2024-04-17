@@ -24,10 +24,17 @@ def sanitize_response(file_path)
   puts "Using replacements from #{replacements_path}\nreplacements: #{replacements}"
 
   data["http_interactions"].each do |interaction|
-    response_body = JSON.parse(interaction["response"]["body"]["string"])
-    puts "sanitizing response body..."
-    sanitize_data(response_body, replacements)
-    interaction["response"]["body"]["string"] = response_body.to_json
+    response_body_string = interaction["response"]["body"]["string"]
+    next if response_body_string.strip.empty?
+
+    begin
+      response_body = JSON.parse(response_body_string)
+      puts "sanitizing response body..."
+      sanitize_data(response_body, replacements)
+      interaction["response"]["body"]["string"] = response_body.to_json
+    rescue JSON::ParserError => e
+      puts "Warning: Could not parse JSON in response body: #{e.message}"
+    end
   end
 
   File.open(file_path, "w") { |file| file.puts data.to_yaml }

@@ -27,12 +27,12 @@ class TestRaindropIoRaindrop < Minitest::Test
     VCR.use_cassette("current_user_with_collections") do
       user = RaindropIo::User.current_user
       refute_nil user.is_a?(RaindropIo::ApiError)
-      # assert user.fullName == "user123"
-      # assert user.name == "user123"
-      # assert user.email == "user123@example.com"
-      # assert user.id.to_s == "123456789", "Expected 123456789, got #{user.id}"
-      # assert user.groups.size == 1, "Expected 1 group, got #{user.groups.size}"
-      # assert user.groups[0]["collections"] == [43330903, 36370053], "Expected collections, got #{user.groups[0]["collections"]}"
+      assert user.fullName == "user123", "Expected user123, got #{user.fullName}"
+      assert user.name == "user123"
+      assert user.email == "user123@example.com"
+      assert user.id.to_s == "123456789", "Expected 123456789, got #{user.id}"
+      assert user.groups.size == 1, "Expected 1 group, got #{user.groups.size}"
+      assert user.groups[0]["collections"] == [43358979, 43330903, 36370053, 43358978], "Expected collections, got #{user.groups[0]["collections"]}"
       collections = user.collections
       pp collections
     end
