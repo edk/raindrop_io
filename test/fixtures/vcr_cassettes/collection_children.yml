@@ -1,0 +1,61 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.raindrop.io/rest/v1/collections/childrens
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Authorization:
+      - Bearer <BEARER_TOKEN>
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Thu, 18 Apr 2024 01:44:57 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Transfer-Encoding:
+      - chunked
+      Connection:
+      - keep-alive
+      X-Powered-By:
+      - Express
+      Server-Timing:
+      - dc;desc=eu
+      - find_collections;dur=23.162
+      - total;dur=33.290
+      Cache-Control:
+      - private
+      X-Ratelimit-Limit:
+      - '120'
+      X-Ratelimit-Remaining:
+      - '119'
+      X-Ratelimit-Reset:
+      - '1713404757'
+      Etag:
+      - W/"9a4-C2ydz3mg4lm4Jp7CUdU3f2Ac0QU"
+      Cf-Cache-Status:
+      - DYNAMIC
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 8760f8fd7806ce7c-SJC
+      Alt-Svc:
+      - h3=":443"; ma=86400
+    body:
+      encoding: ASCII-8BIT
+      string: '{"result":true,"items":[{"_id":43330907,"title":"programming","description":"","user":{"$ref":"users","$id":1234567},"parent":{"$ref":"collections","$id":43330903},"public":false,"view":"simple","count":0,"cover":[],"sort":3,"expanded":true,"creatorRef":{"_id":1234567,"name":"user123","email":""},"lastAction":"2024-04-16T17:19:41.716Z","created":"2024-04-16T17:19:41.717Z","lastUpdate":"2024-04-16T17:26:48.391Z","slug":"programming","access":{"for":1234567,"level":4,"root":false,"draggable":true},"author":true},{"_id":43330933,"title":"AI/ML","description":"","user":{"$ref":"users","$id":1234567},"parent":{"$ref":"collections","$id":43330903},"public":false,"view":"simple","count":0,"cover":[],"sort":2,"expanded":true,"creatorRef":{"_id":1234567,"name":"user123","email":""},"lastAction":"2024-04-16T17:23:18.994Z","created":"2024-04-16T17:23:18.994Z","lastUpdate":"2024-04-16T17:26:48.391Z","slug":"ai-ml","access":{"for":1234567,"level":4,"root":false,"draggable":true},"author":true},{"_id":43330951,"title":"DevOps","description":"","user":{"$ref":"users","$id":1234567},"parent":{"$ref":"collections","$id":43330903},"public":false,"view":"simple","count":0,"cover":[],"sort":1,"expanded":true,"creatorRef":{"_id":1234567,"name":"user123","email":""},"lastAction":"2024-04-16T17:26:42.035Z","created":"2024-04-16T17:26:42.036Z","lastUpdate":"2024-04-16T17:26:48.391Z","slug":"dev-ops","access":{"for":1234567,"level":4,"root":false,"draggable":true},"author":true},{"_id":43330952,"title":"hardware","description":"","user":{"$ref":"users","$id":1234567},"parent":{"$ref":"collections","$id":43330903},"public":false,"view":"simple","count":0,"cover":[],"sort":-1,"expanded":true,"creatorRef":{"_id":1234567,"name":"user123","email":""},"lastAction":"2024-04-16T17:26:48.316Z","created":"2024-04-16T17:26:48.316Z","lastUpdate":"2024-04-16T17:26:48.316Z","slug":"hardware","access":{"for":1234567,"level":4,"root":false,"draggable":true},"author":true},{"_id":43365154,"title":"networking","description":"","user":{"$ref":"users","$id":1234567},"parent":{"$ref":"collections","$id":43330952},"public":false,"view":"simple","count":0,"cover":[],"sort":-1,"expanded":true,"creatorRef":{"_id":1234567,"name":"user123","email":""},"lastAction":"2024-04-18T01:44:36.495Z","created":"2024-04-18T01:44:36.496Z","lastUpdate":"2024-04-18T01:44:36.496Z","slug":"networking","access":{"for":1234567,"level":4,"root":false,"draggable":true},"author":true}]}'
+  recorded_at: Thu, 18 Apr 2024 01:44:57 GMT
+recorded_with: VCR 6.2.0

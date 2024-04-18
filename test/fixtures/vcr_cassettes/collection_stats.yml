@@ -1,0 +1,62 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.raindrop.io/rest/v1/user/stats
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Authorization:
+      - Bearer <BEARER_TOKEN>
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Thu, 18 Apr 2024 01:56:50 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Transfer-Encoding:
+      - chunked
+      Connection:
+      - keep-alive
+      X-Powered-By:
+      - Express
+      Server-Timing:
+      - dc;desc=eu
+      - total;dur=29.237
+      Cache-Control:
+      - private
+      X-Ratelimit-Limit:
+      - '120'
+      X-Ratelimit-Remaining:
+      - '119'
+      X-Ratelimit-Reset:
+      - '1713405469'
+      X-Api-Cache:
+      - MISS
+      Etag:
+      - W/"b3-9flreuVYRAkxqrVlCCQrnJ8du6Y"
+      Cf-Cache-Status:
+      - DYNAMIC
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 87610a63baf267f4-SJC
+      Alt-Svc:
+      - h3=":443"; ma=86400
+    body:
+      encoding: ASCII-8BIT
+      string: '{"result":true,"items":[{"_id":0,"count":1450},{"_id":-1,"count":743},{"_id":-99,"count":24}],"meta":{"_id":123456,"changedBookmarksDate":"2024-04-18T01:44:37.050Z","pro":false}}'
+  recorded_at: Thu, 18 Apr 2024 01:56:49 GMT
+recorded_with: VCR 6.2.0

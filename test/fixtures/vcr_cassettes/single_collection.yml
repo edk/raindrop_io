@@ -1,0 +1,60 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.raindrop.io/rest/v1/collection/43330952
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Authorization:
+      - Bearer <BEARER_TOKEN>
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Thu, 18 Apr 2024 01:40:25 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Transfer-Encoding:
+      - chunked
+      Connection:
+      - keep-alive
+      X-Powered-By:
+      - Express
+      Server-Timing:
+      - dc;desc=eu
+      - total;dur=23.385
+      Cache-Control:
+      - private
+      X-Ratelimit-Limit:
+      - '120'
+      X-Ratelimit-Remaining:
+      - '119'
+      X-Ratelimit-Reset:
+      - '1713404485'
+      Etag:
+      - W/"1ff-5I5nzIpOkOT7aOFYYLAFURPego8"
+      Cf-Cache-Status:
+      - DYNAMIC
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 8760f25aee4bcf49-SJC
+      Alt-Svc:
+      - h3=":443"; ma=86400
+    body:
+      encoding: ASCII-8BIT
+      string: '{"result":true,"item":{"_id":"123456789","title":"hardware","description":"","user":{"$ref":"users","$id":"123456789"},"parent":{"$ref":"collections","$id":"123456789"},"public":false,"view":"simple","count":0,"cover":[],"sort":-1,"expanded":true,"creatorRef":{"_id":"123456789","name":"user123","email":"user123@example.com"},"lastAction":"2024-04-16T17:26:48.316Z","created":"2024-04-16T17:26:48.316Z","lastUpdate":"2024-04-16T17:26:48.316Z","slug":"hardware","access":{"for":"123456789","level":4,"root":false,"draggable":true},"author":true}}'
+  recorded_at: Thu, 18 Apr 2024 01:40:25 GMT
+recorded_with: VCR 6.2.0

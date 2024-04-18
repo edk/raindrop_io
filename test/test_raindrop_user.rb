@@ -41,7 +41,7 @@ class TestRaindropIoRaindrop < Minitest::Test
   end
 
   def test_finding_user_by_name
-    skip "Can't get the api endpoint to work"
+    # skip "Can't get the api endpoint to work"
     # VCR.use_cassette("find_user_by_name") do
     #   user = RaindropIo::User.find_by_name("somename")
     #   refute_nil user.is_a?(RaindropIo::ApiError)

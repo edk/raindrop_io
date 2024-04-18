@@ -23,7 +23,7 @@ http_interactions:
       message: OK
     headers:
       Date:
-      - Tue, 16 Apr 2024 17:34:23 GMT
+      - Thu, 18 Apr 2024 01:23:25 GMT
       Content-Type:
       - application/json; charset=utf-8
       Transfer-Encoding:
@@ -34,8 +34,8 @@ http_interactions:
       - Express
       Server-Timing:
       - dc;desc=eu
-      - find_collections;dur=21.865
-      - total;dur=31.007
+      - find_collections;dur=28.553
+      - total;dur=317.839
       Cache-Control:
       - private
       X-Ratelimit-Limit:
@@ -43,19 +43,19 @@ http_interactions:
       X-Ratelimit-Remaining:
       - '119'
       X-Ratelimit-Reset:
-      - '1713288923'
+      - '1713403465'
       Etag:
-      - W/"386-ToMQBqW4lZGsp+ShoIKyp9rLS0g"
+      - W/"545-AaQH7euQCioqd5BO/45xFj+M2Ks"
       Cf-Cache-Status:
       - DYNAMIC
       Server:
       - cloudflare
       Cf-Ray:
-      - 8755ed01997e67dd-SJC
+      - 8760d9734ea5ce48-SJC
       Alt-Svc:
       - h3=":443"; ma=86400
     body:
       encoding: ASCII-8BIT
-      string: '{"result":true,"items":[{"view":"list","_id":"123456789","title":"Unread","description":"","user":{"$ref":"users","$id":1629134},"public":false,"count":707,"cover":[],"expanded":true,"creatorRef":{"_id":"123456789","name":"user123","email":""},"lastAction":"2023-09-07T23:39:51.888Z","created":"2023-07-31T22:47:02.382Z","lastUpdate":"2023-09-07T23:39:51.888Z","sort":36370053,"slug":"unread","access":{"for":1629134,"level":4,"root":false,"draggable":true},"author":true},{"_id":"123456789","title":"tech","description":"","user":{"$ref":"users","$id":1629134},"public":false,"view":"simple","count":0,"cover":[],"sort":0,"expanded":true,"creatorRef":{"_id":"123456789","name":"user123","email":""},"lastAction":"2024-04-16T17:19:12.919Z","created":"2024-04-16T17:19:12.943Z","lastUpdate":"2024-04-16T17:19:12.943Z","slug":"tech","access":{"for":1629134,"level":4,"root":false,"draggable":true},"author":true}]}'
-  recorded_at: Tue, 16 Apr 2024 17:34:23 GMT
+      string: '{"result":true,"items":[{"view":"list","_id":36370053,"title":"Unread","description":"","user":{"$ref":"users","$id":1234567},"public":false,"count":707,"cover":[],"expanded":true,"creatorRef":{"_id":1234567,"name":"user123","email":""},"lastAction":"2023-09-07T23:39:51.888Z","created":"2023-07-31T22:47:02.382Z","lastUpdate":"2023-09-07T23:39:51.888Z","sort":36370053,"slug":"unread","access":{"for":1234567,"level":4,"root":false,"draggable":true},"author":true},{"_id":43330903,"title":"tech","description":"","user":{"$ref":"users","$id":1234567},"public":false,"view":"simple","count":0,"cover":[],"sort":0,"expanded":true,"creatorRef":{"_id":1234567,"name":"user123","email":""},"lastAction":"2024-04-16T17:19:12.919Z","created":"2024-04-16T17:19:12.943Z","lastUpdate":"2024-04-16T17:19:12.943Z","slug":"tech","access":{"for":1234567,"level":4,"root":false,"draggable":true},"author":true},{"_id":43358979,"title":"Interesting","description":"","user":{"$ref":"users","$id":1234567},"public":false,"view":"simple","count":0,"cover":[],"sort":0,"expanded":true,"creatorRef":{"_id":1234567,"name":"user123","email":""},"lastAction":"2024-04-17T18:20:09.703Z","created":"2024-04-17T18:20:09.704Z","lastUpdate":"2024-04-17T18:20:09.704Z","slug":"interesting","access":{"for":1234567,"level":4,"root":false,"draggable":true},"author":true}]}'
+  recorded_at: Thu, 18 Apr 2024 01:23:25 GMT
 recorded_with: VCR 6.2.0

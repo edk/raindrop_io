@@ -26,5 +26,13 @@ module RaindropIo
     def collections
       @groups[0]["collections"].map { |id| RaindropIo::Collection.find(id) }
     end
+
+    # TODO:
+    # update user
+    # PUT https://api.raindrop.io/rest/v1/user
+    # Connect social network account
+    # GET https://api.raindrop.io/rest/v1/user/connect/{provider}
+    # Disconnect social network account
+    # GET https://api.raindrop.io/rest/v1/user/connect/{provider}/revoke
   end
 end
