@@ -6,6 +6,11 @@ module RaindropIo
       end
     end
 
+    def initialize(attributes = {})
+      initialize_attributes(attributes)
+      @attributes = attributes
+    end
+
     def initialize_attributes(attributes)
       attributes.each do |key, value|
         variable_name = (key == "_id") ? :id : key.to_sym

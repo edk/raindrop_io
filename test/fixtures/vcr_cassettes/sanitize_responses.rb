@@ -42,7 +42,7 @@ end
 
 if ARGV.size == 0
   puts "Usage: #{$PROGRAM_NAME} [file_path]..."
-  puts "Ensure you create a json file called 'replace_sensitive_info' with key/value pairs to replace sensitive info in the response body."
+  puts "Ensure you create a json file called 'replace_sensitive_info.json' with key/value pairs to replace sensitive info in the response body."
   puts "e.g. {\"email\": \"fakeEmail@example.com\"}"
   exit 1
 end

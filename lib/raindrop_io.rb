@@ -9,6 +9,7 @@ require_relative "raindrop_io/collection"
 
 begin
   require "pry"
+  require "byebug"
 rescue LoadError
 end
 

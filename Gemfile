@@ -12,6 +12,8 @@ gem "minitest", "~> 5.16"
 gem "standard", "~> 1.3"
 
 gem "pry"
+gem "byebug"
 gem "guard"
 gem "guard-minitest"
 gem "guard-standardrb"
+gem "minitest-reporters"

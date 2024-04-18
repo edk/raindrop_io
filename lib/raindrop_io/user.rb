@@ -10,12 +10,17 @@ module RaindropIo
           RaindropIo::ApiError.new response
         end
       end
-    end
 
-    def initialize(attributes = {})
-      initialize_attributes(attributes)
-
-      @attributes = attributes
+      # get user by name
+      # https://api.raindrop.io/rest/v1/user/{name}
+      def find_by_name(name)
+        response = get("/user/#{ERB::Util.url_encode(name)}")
+        if response.success? && response["result"] == true
+          User.new response["user"]
+        else
+          RaindropIo::ApiError.new response
+        end
+      end
     end
 
     def collections

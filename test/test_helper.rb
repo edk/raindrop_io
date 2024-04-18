@@ -4,6 +4,8 @@ $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
 require "raindrop_io"
 require "minitest/autorun"
 require "vcr"
+require "minitest/reporters"
+Minitest::Reporters.use!
 
 if ENV["RAINDROP_TOKEN"].nil?
   puts "WARNING: RAINDROP_TOKEN is not set. Please set it in your environment variables."

@@ -1,4 +1,5 @@
 require "httparty"
+require "erb"
 
 module RaindropIo
   class ApiError
@@ -40,8 +41,7 @@ module RaindropIo
       private
 
       def build_url(path)
-        adjusted_path = path.sub(/\A\//, "")
-        [configuration.base_uri, adjusted_path].join("/")
+        File.join [configuration.base_uri, path]
       end
 
       def headers

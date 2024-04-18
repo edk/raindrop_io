@@ -19,10 +19,5 @@ module RaindropIo
         RaindropIo::ApiError.new response
       end
     end
-
-    def initialize(attributes = {})
-      @id = attributes["_id"]
-      @attributes = attributes
-    end
   end
 end
