@@ -37,7 +37,9 @@ After checking out the repo, run `bin/setup` to install dependencies. Then, run 
 You can set the token like so:
 ```
 RAINDROP_TOKEN="11111111-2222-3333-4444-555555555555" bin/console
+RAINDROP_TOKEN="11111111-2222-3333-4444-555555555555" bundle exec rake test
 ```
+etc.
 
 Note that since this was intended for my own personal use, I did not bother
 to implement OAuth authentication, only bearer token usage.  Feel free to

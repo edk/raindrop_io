@@ -1,7 +1,7 @@
 module RaindropIo
   class User < RaindropIo::Base
     class << self
-      # https://api.raindrop.io/rest/v1/user
+      # @see https://api.raindrop.io/rest/v1/user
       def current_user
         response = get("/user")
         if response.success? && response["result"] == true
@@ -12,7 +12,7 @@ module RaindropIo
       end
 
       # get user by name
-      # https://api.raindrop.io/rest/v1/user/{name}
+      # @see https://api.raindrop.io/rest/v1/user/{name}
       def find_by_name(name)
         response = get("/user/#{ERB::Util.url_encode(name)}")
         if response.success? && response["result"] == true

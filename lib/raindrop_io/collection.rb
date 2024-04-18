@@ -1,14 +1,16 @@
 module RaindropIo
   # System collections
+  #
   # Every user have several system non-removable collections. They are not contained in any API responses.
-  # _id | Description
-  # ----|------------
-  # -1  | "Unsorted" collection
-  # -99 | "Trash" collection
-
+  #
+  # | _id | Description           |
+  # | ----|-----------------------|
+  # | -1  | "Unsorted" collection |
+  # | -99 | "Trash" collection    |
   class Collection < RaindropIo::Base
     class << self
       # Get root collections
+      #
       # GET https://api.raindrop.io/rest/v1/collections
       def all
         response = get("/collections")
@@ -20,6 +22,7 @@ module RaindropIo
       end
 
       # Get child collections
+      #
       # GET https://api.raindrop.io/rest/v1/collections/childrens
       def childrens
         response = get("/collections/childrens")
@@ -31,7 +34,8 @@ module RaindropIo
       end
 
       # Get collection
-      # https://api.raindrop.io/rest/v1/collection/{id}
+      #
+      # @see https://api.raindrop.io/rest/v1/collection/{id}
       def find(collection_id)
         response = get("/collection/#{collection_id}")
         if response.success? && response["item"]
@@ -42,6 +46,7 @@ module RaindropIo
       end
 
       # Get system collections count
+      #
       # GET https://api.raindrop.io/rest/v1/user/stats
       def stats
         response = get("/user/stats")
@@ -51,6 +56,8 @@ module RaindropIo
           RaindropIo::ApiError.new response
         end
       end
+
+      # TODO: Implement the following methods
 
       # Create collection
       # POST https://api.raindrop.io/rest/v1/collection

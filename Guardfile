@@ -11,3 +11,8 @@ guard :standardrb, fix: true, all_on_start: true do
   watch(%r{.+\.rb$})
   watch(%r{(?:.+/)?\.?[^/]+$}) { |m| File.dirname(m[0]) }
 end
+
+guard :yard, server: false, stdout: "log/yard.log", stderr: "log/yard.log", cli: "--quiet" do
+  watch(%r{^lib/.+\.rb$})
+  watch("README.md")
+end

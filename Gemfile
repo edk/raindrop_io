@@ -17,3 +17,7 @@ gem "guard"
 gem "guard-minitest"
 gem "guard-standardrb"
 gem "minitest-reporters"
+gem "yard"
+gem "redcarpet" # for yard
+gem "guard-yard"
+gem "webrick"

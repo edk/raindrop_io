@@ -9,6 +9,15 @@ class TestRaindropIoRaindrop < Minitest::Test
     end
   end
 
+  def test_get_raindrops_from_collection
+    VCR.use_cassette("raindrops_multiple_from_collection") do
+      response = RaindropIo::Raindrop.raindrops("-1")
+      # binding.pry
+      # assert_instance_of Array, response
+      # assert_instance_of RaindropIo::Raindrop, response.first
+    end
+  end
+
   # def test_single_raindrop
   #   VCR.use_cassette('single_raindrop') do
   #     response = api.raindrop("768481303")
