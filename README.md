@@ -1,34 +1,53 @@
 # RaindropIo
 
-TODO: Delete this and the text below, and describe your gem
+A simple Ruby gem to access the Raindrop.io API.
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/raindrop_io`. To experiment with that code, run `bin/console` for an interactive prompt.
+Note that this was created for my own personal project, and thus, nowhere
+near complete.  However, I welcome any contributions to improve the converage.
+Ensure that any VCR cassettes are sanitized of any sensitive information before
+making a PR.
 
 ## Installation
 
-TODO: Replace `UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG` with your gem name right after releasing it to RubyGems.org. Please do not do it earlier due to security reasons. Alternatively, replace this section with instructions to install your gem from git if you don't plan to release to RubyGems.org.
-
 Install the gem and add to the application's Gemfile by executing:
 
-    $ bundle add UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+    $ bundle add raindrop_io
 
 If bundler is not being used to manage dependencies, install the gem by executing:
 
-    $ gem install UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+    $ gem install raindrop_io
 
 ## Usage
 
-TODO: Write usage instructions here
+Set the API token with:
+```
+RaindropIo::Api.configure { |c| c.api_token = ENV["RAINDROP_TOKEN"] }
+```
+Any further operations with the classes:
+* RaindropIo::Collection
+* RaindropIo::Raindrop 
+* RaindropIo::User 
+
+will use that token.
 
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
 
+You can set the token like so:
+```
+RAINDROP_TOKEN="11111111-2222-3333-4444-555555555555" bin/console
+```
+
+Note that since this was intended for my own personal use, I did not bother
+to implement OAuth authentication, only bearer token usage.  Feel free to
+make a tested, documented PR.
+
 To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/raindrop_io.
+Bug reports and pull requests are welcome on GitHub at https://github.com/edk/raindrop_io.
 
 ## License
 
