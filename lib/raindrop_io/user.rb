@@ -11,7 +11,7 @@ module RaindropIo
         end
       end
 
-      # get user by name
+      # Get user by name
       # @see https://api.raindrop.io/rest/v1/user/{name}
       def find_by_name(name)
         response = get("/user/#{ERB::Util.url_encode(name)}")
