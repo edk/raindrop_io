@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     raindrop_io (0.1.0)
-      httparty
+      http
 
 GEM
   remote: https://rubygems.org/
@@ -11,6 +11,7 @@ GEM
       public_suffix (>= 2.0.2, < 6.0)
     ansi (1.5.0)
     ast (2.4.2)
+    base64 (0.2.0)
     bigdecimal (3.1.7)
     builder (3.2.4)
     byebug (11.1.3)
@@ -18,7 +19,11 @@ GEM
     crack (1.0.0)
       bigdecimal
       rexml
+    domain_name (0.6.20240107)
     ffi (1.16.3)
+    ffi-compiler (1.3.2)
+      ffi (>= 1.15.5)
+      rake
     formatador (1.1.0)
     guard (2.18.1)
       formatador (>= 0.2.4)
@@ -41,25 +46,32 @@ GEM
       guard (>= 1.1.0)
       yard (>= 0.7.0)
     hashdiff (1.1.0)
-    httparty (0.21.0)
-      mini_mime (>= 1.0.0)
-      multi_xml (>= 0.5.2)
+    http (5.2.0)
+      addressable (~> 2.8)
+      base64 (~> 0.1)
+      http-cookie (~> 1.0)
+      http-form_data (~> 2.2)
+      llhttp-ffi (~> 0.5.0)
+    http-cookie (1.0.5)
+      domain_name (~> 0.5)
+    http-form_data (2.3.0)
     json (2.7.2)
     language_server-protocol (3.17.0.3)
     lint_roller (1.1.0)
     listen (3.9.0)
       rb-fsevent (~> 0.10, >= 0.10.3)
       rb-inotify (~> 0.9, >= 0.9.10)
+    llhttp-ffi (0.5.0)
+      ffi-compiler (~> 1.0)
+      rake (~> 13.0)
     lumberjack (1.2.10)
     method_source (1.1.0)
-    mini_mime (1.1.5)
     minitest (5.22.3)
     minitest-reporters (1.6.1)
       ansi
       builder
       minitest (>= 5.0)
       ruby-progressbar
-    multi_xml (0.6.0)
     nenv (0.3.0)
     notiffany (0.1.3)
       nenv (~> 0.1)

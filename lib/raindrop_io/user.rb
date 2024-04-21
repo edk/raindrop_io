@@ -4,8 +4,8 @@ module RaindropIo
       # @see https://api.raindrop.io/rest/v1/user
       def current_user
         response = get("/user")
-        if response.success? && response["result"] == true
-          User.new response["user"]
+        if response.status.success? && response.parse["result"] == true
+          User.new response.parse["user"]
         else
           RaindropIo::ApiError.new response
         end
@@ -15,8 +15,8 @@ module RaindropIo
       # @see https://api.raindrop.io/rest/v1/user/{name}
       def find_by_name(name)
         response = get("/user/#{ERB::Util.url_encode(name)}")
-        if response.success? && response["result"] == true
-          User.new response["user"]
+        if response.status.success? && response.parse["result"] == true
+          User.new response.parse["user"]
         else
           RaindropIo::ApiError.new response
         end

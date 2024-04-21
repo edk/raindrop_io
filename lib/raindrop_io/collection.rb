@@ -14,8 +14,8 @@ module RaindropIo
       # GET https://api.raindrop.io/rest/v1/collections
       def all
         response = get("/collections")
-        if response.success? && response["items"]
-          response["items"].map { |attributes| Collection.new(attributes) }
+        if response.status.success? && response.parse["items"]
+          response.parse["items"].map { |attributes| Collection.new(attributes) }
         else
           RaindropIo::ApiError.new response
         end
@@ -26,8 +26,8 @@ module RaindropIo
       # GET https://api.raindrop.io/rest/v1/collections/childrens
       def childrens
         response = get("/collections/childrens")
-        if response.success? && response["items"]
-          response["items"].map { |attributes| Collection.new(attributes) }
+        if response.status.success? && response.parse["items"]
+          response.parse["items"].map { |attributes| Collection.new(attributes) }
         else
           RaindropIo::ApiError.new response
         end
@@ -38,8 +38,8 @@ module RaindropIo
       # @see https://api.raindrop.io/rest/v1/collection/{id}
       def find(collection_id)
         response = get("/collection/#{collection_id}")
-        if response.success? && response["item"]
-          Collection.new response["item"]
+        if response.status.success? && response.parse["item"]
+          Collection.new response.parse["item"]
         else
           RaindropIo::ApiError.new response
         end
@@ -50,28 +50,30 @@ module RaindropIo
       # GET https://api.raindrop.io/rest/v1/user/stats
       def stats
         response = get("/user/stats")
-        if response.success?
-          response
+        if response.status.success?
+          response.parse
         else
           RaindropIo::ApiError.new response
         end
       end
 
-      # TODO: Implement the following methods
+      # @todo Implement the following methods
 
-      # Create collection
+      # @todo Create collection
       # POST https://api.raindrop.io/rest/v1/collection
       # Create a new collection
 
+      # @todo
       # Update collection
       # PUT https://api.raindrop.io/rest/v1/collection/{id}
       # Update an existing collection
 
+      # @todo
       # Upload cover
       # PUT https://api.raindrop.io/rest/v1/collection/{id}/cover
       # It's possible to upload cover from desktop. PNG, GIF and JPEG supported
 
-      # Remove collection
+      # @todo Remove collection
       # DELETE https://api.raindrop.io/rest/v1/collection/{id}
       # Remove an existing collection and all its descendants.
       # Raindrops will be moved to "Trash" collection

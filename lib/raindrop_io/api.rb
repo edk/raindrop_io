@@ -1,4 +1,4 @@
-require "httparty"
+require "http"
 require "erb"
 
 module RaindropIo
@@ -8,7 +8,15 @@ module RaindropIo
 
     def initialize(response)
       @status = response.code
-      @message = response.message
+      if response.content_type.mime_type.nil?
+        @message = response.to_s
+      elsif response.content_type.mime_type == "application/json"
+        @message = if response.status.success?
+          response.parse
+        else
+          response.parse["errorMessage"]
+        end
+      end
       @response = response
     end
   end
@@ -35,7 +43,7 @@ module RaindropIo
 
       def get(path, options = {})
         options[:headers] = headers
-        HTTParty.get(build_url(path), options)
+        HTTP.headers(options).get(build_url(path))
       end
 
       private

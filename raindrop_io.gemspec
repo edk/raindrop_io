@@ -34,7 +34,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   # Uncomment to register a new dependency of your gem
-  spec.add_dependency "httparty"
+  spec.add_dependency "http"
   spec.add_development_dependency "vcr"
   spec.add_development_dependency "webmock"
 

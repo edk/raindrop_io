@@ -15,8 +15,8 @@ module RaindropIo
       # @return [Array<RaindropIo::Raindrop>] An array of Raindrop objects
       def raindrops(collection_id, options = {})
         response = get("/raindrops/#{collection_id}", options)
-        if response.success? && response["items"]
-          response["items"].map { |attributes| Raindrop.new(attributes) }
+        if response.status.success? && response.parse["items"]
+          response.parse["items"].map { |attributes| Raindrop.new(attributes) }
         else
           RaindropIo::ApiError.new response
         end
@@ -26,8 +26,8 @@ module RaindropIo
       # @see https://api.raindrop.io/rest/v1/raindrop/{id}
       def raindrop(raindrop_id)
         response = get("/raindrop/#{raindrop_id}")
-        if response.success? && response["item"]
-          Raindrop.new response["item"]
+        if response.status.success? && response.parse["item"]
+          Raindrop.new response.parse["item"]
         else
           RaindropIo::ApiError.new response
         end
