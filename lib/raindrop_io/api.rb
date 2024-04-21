@@ -2,6 +2,7 @@ require "http"
 require "erb"
 
 module RaindropIo
+  # A wrapper around api errors
   class ApiError
     attr_reader :status, :message
     attr_reader :response # to view the raw response for debugging
@@ -21,6 +22,11 @@ module RaindropIo
     end
   end
 
+  # Api configuration
+  # Usage:
+  # RaindropIo::Api.configure do |config|
+  #   config.api_token = ENV["RAINDROP_TOKEN"]
+  # end
   class Api
     class Configuration
       attr_accessor :api_token
@@ -59,6 +65,6 @@ module RaindropIo
       def api_token
         configuration.api_token
       end
-    end
+    end # class << self
   end
 end

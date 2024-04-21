@@ -17,5 +17,5 @@ gem "guard-standardrb"
 gem "minitest-reporters"
 gem "yard"
 gem "redcarpet" # for yard
-gem "guard-yard"
+gem "guard-yard", github: "edk/guard-yard"
 gem "webrick"

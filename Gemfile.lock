@@ -1,3 +1,11 @@
+GIT
+  remote: https://github.com/edk/guard-yard.git
+  revision: 1a12fb0390f90bb1ecd42d022737319b76e3cef9
+  specs:
+    guard-yard (2.2.1)
+      guard (>= 2.18.1)
+      yard (>= 0.9.36)
+
 PATH
   remote: .
   specs:
@@ -42,9 +50,6 @@ GEM
       guard (>= 2.0.0)
       guard-compat (~> 1.0)
       standard
-    guard-yard (2.2.1)
-      guard (>= 1.1.0)
-      yard (>= 0.7.0)
     hashdiff (1.1.0)
     http (5.2.0)
       addressable (~> 2.8)
@@ -142,7 +147,7 @@ DEPENDENCIES
   guard
   guard-minitest
   guard-standardrb
-  guard-yard
+  guard-yard!
   minitest (~> 5.16)
   minitest-reporters
   pry
