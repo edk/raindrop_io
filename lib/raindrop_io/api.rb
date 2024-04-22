@@ -54,8 +54,7 @@ module RaindropIo
       end
 
       def get(path, options = {})
-        resp = HTTP.headers(headers.merge(options)).get(build_url(path))
-        # log the response headers, including the rate limit headers
+        resp = HTTP.headers(headers).get(build_url(path), params: options)
         log_response_headers(resp)
         resp
       end
@@ -68,7 +67,7 @@ module RaindropIo
 
       def log_response_headers(response)
         return if configuration.logger.nil?
-        # log the response headers, including the rate limit headers
+        # log the the rate limit headers, more later if needed?
         configuration.logger.info "Rate limit: #{response.headers["x-ratelimit-limit"]}," \
         " remaining: #{response.headers["x-ratelimit-remaining"]}," \
         " reset at: #{Time.at(response.headers["x-ratelimit-reset"].to_i)} time to reset: #{response.headers["x-ratelimit-reset"].to_i - Time.now.to_i}"

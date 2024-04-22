@@ -1,0 +1,265 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.raindrop.io/rest/v1/raindrops/36370053?page=0
+    body:
+      encoding: ASCII-8BIT
+      string: ''
+    headers:
+      Authorization:
+      - Bearer <BEARER_TOKEN>
+      Content-Type:
+      - application/json
+      Connection:
+      - close
+      Host:
+      - api.raindrop.io
+      User-Agent:
+      - http.rb/5.2.0
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Mon, 22 Apr 2024 02:15:55 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Content-Length:
+      - '27651'
+      Connection:
+      - close
+      X-Powered-By:
+      - Express
+      Server-Timing:
+      - dc;desc=eu
+      - total;dur=16.414
+      Cache-Control:
+      - private
+      X-Ratelimit-Limit:
+      - '120'
+      X-Ratelimit-Remaining:
+      - '119'
+      X-Ratelimit-Reset:
+      - '1713752214'
+      X-Api-Cache:
+      - HIT
+      Etag:
+      - '"6c03-pbi5TbVE79PQqhcr+2c+wslvtBc"'
+      Cf-Cache-Status:
+      - DYNAMIC
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 87821bd71963f94b-SJC
+      Alt-Svc:
+      - h3=":443"; ma=86400
+    body:
+      encoding: UTF-8
+      string: '{"result":true,"items":[{"_id":619049873,"link":"https://www.akshaykhot.com/introduction-to-rails-initializers","title":"A
+        Brief Introduction to Rails Initializers: Why, What, and How","excerpt":"You
+        can use Rails initializers to configure your application or external gems.
+        In this post, we''ll learn how they work.","note":"","type":"article","user":{"$ref":"users","$id":1629134},"cover":"https://www.akshaykhot.com/content/images/2023/07/code-10.png","media":[{"type":"image","link":"https://www.akshaykhot.com/content/images/2023/07/code-10.png"}],"tags":["rails"],"removed":false,"created":"2023-07-28T15:40:24.000Z","lastUpdate":"2023-08-02T21:38:10.570Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"akshaykhot.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049873,"collectionId":36370053},{"_id":619049872,"link":"https://www.vector-logic.com/blog/posts/common-distance-metrics-implemented-in-ruby","title":"Common
+        Distance Metrics Implemented in Ruby","excerpt":"The fields of machine learning
+        and artificial intelligence rely, fundamentally, upon the ability to measure
+        the distance between two points. In this article we introduce some of the
+        most common metrics used, discuss their interpretation and demonstrate how
+        these can be implemented in ruby.","note":"","type":"article","user":{"$ref":"users","$id":1629134},"cover":"https://vector-logic-uploads.s3.eu-west-1.amazonaws.com/ltgbwsj3dskgiaoaqo8dgt57xgec?response-content-disposition=inline%3B%20filename%3D%22dalle_cropped_2.png%22%3B%20filename%2A%3DUTF-8%27%27dalle_cropped_2.png&response-content-type=image%2Fpng&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA42JND3JCHLMFD5NL%2F20230728%2Feu-west-1%2Fs3%2Faws4_request&X-Amz-Date=20230728T081709Z&X-Amz-Expires=300&X-Amz-SignedHeaders=host&X-Amz-Signature=9770b441ef08ba155325ec9448283bed0369494f6082affd9d5839dc52df75ec","media":[{"type":"image","link":"https://vector-logic-uploads.s3.eu-west-1.amazonaws.com/ltgbwsj3dskgiaoaqo8dgt57xgec?response-content-disposition=inline%3B%20filename%3D%22dalle_cropped_2.png%22%3B%20filename%2A%3DUTF-8%27%27dalle_cropped_2.png&response-content-type=image%2Fpng&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA42JND3JCHLMFD5NL%2F20230728%2Feu-west-1%2Fs3%2Faws4_request&X-Amz-Date=20230728T081709Z&X-Amz-Expires=300&X-Amz-SignedHeaders=host&X-Amz-Signature=9770b441ef08ba155325ec9448283bed0369494f6082affd9d5839dc52df75ec"}],"tags":[],"removed":false,"created":"2023-07-28T15:40:07.000Z","lastUpdate":"2023-07-28T15:40:07.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"vector-logic.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049872,"collectionId":36370053},{"_id":619049871,"link":"https://github.com/conceptofmind/PaLM","title":"conceptofmind/PaLM:
+        An open-source implementation of Google''s PaLM models","excerpt":"An open-source
+        implementation of Google''s PaLM models","note":"","type":"link","user":{"$ref":"users","$id":1629134},"cover":"https://opengraph.githubassets.com/277668ed7245259061b9933519039960297b09f6c5a4665319963181c5b6382b/conceptofmind/PaLM","media":[{"type":"image","link":"https://opengraph.githubassets.com/277668ed7245259061b9933519039960297b09f6c5a4665319963181c5b6382b/conceptofmind/PaLM"}],"tags":[],"removed":false,"created":"2023-07-27T18:41:22.000Z","lastUpdate":"2023-07-27T18:41:22.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"github.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049871,"collectionId":36370053},{"_id":619049870,"link":"https://thoughtbot.com/blog/how-rails-works-type-casting","title":"How
+        Rails'' Type Casting Works","excerpt":"Why is it that when you assign a property
+        to an Active Record model and read it back, the value isn&rsquo;t always the
+        same?","note":"","type":"article","user":{"$ref":"users","$id":1629134},"cover":"https://images.thoughtbot.com/blog-images/social-share-default.png","media":[{"type":"image","link":"https://images.thoughtbot.com/blog-images/social-share-default.png"}],"tags":[],"removed":false,"created":"2023-07-24T22:09:05.000Z","lastUpdate":"2023-07-24T22:09:05.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"thoughtbot.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049870,"collectionId":36370053},{"_id":619049869,"link":"https://mattbrictson.com/blog/gateway-pattern","title":"The
+        Gateway&nbsp;Pattern","excerpt":"Use gateway classes to organize external
+        API integrations and establish a clearer separation of concerns.","note":"","type":"article","user":{"$ref":"users","$id":1629134},"cover":"https://rdl.ink/render/https%3A%2F%2Fmattbrictson.com%2Fblog%2Fgateway-pattern","media":[{"type":"image","link":"https://rdl.ink/render/https%3A%2F%2Fmattbrictson.com%2Fblog%2Fgateway-pattern","screenshot":true}],"tags":[],"removed":false,"created":"2023-07-24T22:08:48.000Z","lastUpdate":"2023-07-24T22:08:48.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"mattbrictson.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049869,"collectionId":36370053},{"_id":619049868,"link":"https://github.com/matifali/dockerdl","title":"GitHub
+        - matifali/dockerdl: Deep Learning Docker Image","excerpt":"Deep Learning
+        Docker Image. Contribute to matifali/dockerdl development by creating an account
+        on GitHub.","note":"","type":"link","user":{"$ref":"users","$id":1629134},"cover":"https://opengraph.githubassets.com/90c95f49a91709b8e67f32fc3019afb308acb6fa4d24b6ec3333618d1649ef0d/matifali/dockerdl","media":[{"type":"image","link":"https://opengraph.githubassets.com/90c95f49a91709b8e67f32fc3019afb308acb6fa4d24b6ec3333618d1649ef0d/matifali/dockerdl"}],"tags":[],"removed":false,"created":"2023-07-19T16:28:55.000Z","lastUpdate":"2023-07-19T16:28:55.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"github.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049868,"collectionId":36370053},{"_id":619049867,"link":"https://developer.nvidia.com/cuda-downloads?Distribution=Ubuntu&target_arch=x86_64&target_os=Linux&target_type=deb_network&target_version=22.04","title":"CUDA
+        Toolkit 12.2 Downloads | NVIDIA Developer","excerpt":"Get the latest feature
+        updates to NVIDIA''s compute stack, including compatibility support for NVIDIA
+        Open GPU Kernel Modules and lazy loading support.","note":"","type":"article","user":{"$ref":"users","$id":1629134},"cover":"https://developer-blogs.nvidia.com/wp-content/uploads/2022/04/cuda-image-16x9-1.jpg","media":[{"type":"image","link":"https://developer-blogs.nvidia.com/wp-content/uploads/2022/04/cuda-image-16x9-1.jpg"}],"tags":[],"removed":false,"created":"2023-07-19T16:28:49.000Z","lastUpdate":"2023-07-19T16:28:49.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"developer.nvidia.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049867,"collectionId":36370053},{"_id":619049866,"link":"https://github.com/openai/whisper/discussions/461","title":"GPU
+        not supported, can I use my CPU instead? · openai/whisper · Discussion","excerpt":"Trying
+        to transcribe a simple voice message like this: whisper --model tiny.en ~/Downloads/voice_message.wav
+        fails with the following error messages: /home/my_user/.virtualenvs/whisper/lib/python3....","note":"","type":"link","user":{"$ref":"users","$id":1629134},"cover":"https://opengraph.githubassets.com/ddee7c1ba24ab1665d300aedec1caa3ea8c8b525c4615f284942e23f2dc68d55/openai/whisper/discussions/461","media":[{"type":"image","link":"https://opengraph.githubassets.com/ddee7c1ba24ab1665d300aedec1caa3ea8c8b525c4615f284942e23f2dc68d55/openai/whisper/discussions/461"}],"tags":[],"removed":false,"created":"2023-07-19T15:27:46.000Z","lastUpdate":"2023-07-19T15:27:46.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"github.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049866,"collectionId":36370053},{"_id":619049865,"link":"https://stackoverflow.com/questions/56431461/how-to-remove-cuda-completely-from-ubuntu","title":"tensorflow
+        - How to remove cuda completely from ubuntu? - Stack Overflow","excerpt":"I
+        have ubuntu 18.04, and accidentally installed cuda 9.1 to run Tensorflow-gpu,
+        but it seems tensorflow-gpu requires cuda 10.0, so I want to remove cuda first
+        by executing:\n\nmartin@nlp-server:~$ su...","note":"","type":"link","user":{"$ref":"users","$id":1629134},"cover":"https://cdn.sstatic.net/Sites/stackoverflow/Img/apple-touch-icon.png?v=c78bd457575a","media":[{"type":"image","link":"https://cdn.sstatic.net/Sites/stackoverflow/Img/apple-touch-icon.png?v=c78bd457575a"}],"tags":[],"removed":false,"created":"2023-07-17T22:17:23.000Z","lastUpdate":"2023-07-17T22:17:23.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"stackoverflow.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049865,"collectionId":36370053},{"_id":619049864,"link":"https://www.digitalocean.com/community/tutorials/how-to-enable-remote-desktop-protocol-using-xrdp-on-ubuntu-22-04","title":"How
+        To Enable Remote Desktop Protocol Using xrdp on Ubuntu 22.04 | DigitalO","excerpt":"Remote
+        Desktop Protocol (RDP) is a network protocol developed by Microsoft that allows
+        users to remotely access and interact with the graphical user interfac…","note":"","type":"article","user":{"$ref":"users","$id":1629134},"cover":"https://www.digitalocean.com/_next/static/media/intro-to-cloud.d49bc5f7.jpeg","media":[{"type":"image","link":"https://www.digitalocean.com/_next/static/media/intro-to-cloud.d49bc5f7.jpeg"}],"tags":[],"removed":false,"created":"2023-07-17T14:36:44.000Z","lastUpdate":"2023-07-17T14:36:44.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"digitalocean.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049864,"collectionId":36370053},{"_id":619049863,"link":"https://www.digitalocean.com/community/tutorials/how-to-install-postgresql-on-ubuntu-20-04-quickstart","title":"How
+        To Install PostgreSQL on Ubuntu 20.04 [Quickstart] | DigitalOcean","excerpt":"PostgreSQL,
+        or Postgres, is a relational database management system that provides an implementation
+        of the SQL querying language. This quickstart guide demon…","note":"","type":"article","user":{"$ref":"users","$id":1629134},"cover":"https://community-cdn-digitalocean-com.global.ssl.fastly.net/5kWwmK8BtWpfC5weGSDqU65t","media":[{"type":"image","link":"https://community-cdn-digitalocean-com.global.ssl.fastly.net/5kWwmK8BtWpfC5weGSDqU65t"}],"tags":[],"removed":false,"created":"2023-07-17T02:17:33.000Z","lastUpdate":"2023-07-17T02:17:33.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"digitalocean.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049863,"collectionId":36370053},{"_id":619049862,"link":"https://ankane.org/new-ml-gems","title":"16
+        New ML Gems for Ruby","excerpt":"In August, I set out to improve the machine
+        learning ecosystem for Ruby and wasn’t sure where it would go. Over the next
+        5 months, I ended up...","note":"","type":"article","user":{"$ref":"users","$id":1629134},"cover":"https://ankane.org/images/ml-gems-2.png","media":[{"type":"image","link":"https://ankane.org/images/ml-gems-2.png"}],"tags":[],"removed":false,"created":"2023-07-09T06:32:51.000Z","lastUpdate":"2023-07-09T06:32:51.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"ankane.org","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049862,"collectionId":36370053},{"_id":619049861,"link":"https://jaykmody.com/blog/gpt-from-scratch","title":"GPT
+        in 60 Lines of NumPy","excerpt":"Implementing a GPT model from scratch in
+        NumPy.","note":"","type":"article","user":{"$ref":"users","$id":1629134},"cover":"https://jaykmody.com/profile.png","media":[{"type":"image","link":"https://jaykmody.com/profile.png"}],"tags":[],"removed":false,"created":"2023-07-09T03:51:26.000Z","lastUpdate":"2023-07-09T03:51:26.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"jaykmody.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049861,"collectionId":36370053},{"_id":619049860,"link":"https://github.com/h2oai/h2o-llmstudio","title":"h2oai/h2o-llmstudio:
+        H2O LLM Studio - a framework and no-code GUI for fine-","excerpt":"H2O LLM
+        Studio - a framework and no-code GUI for fine-tuning LLMs","note":"","type":"link","user":{"$ref":"users","$id":1629134},"cover":"https://opengraph.githubassets.com/84ccd54e2a34efea5f1c5efc1ee0eae7947afc617046b73fe35ebca57746de49/h2oai/h2o-llmstudio","media":[{"type":"image","link":"https://opengraph.githubassets.com/84ccd54e2a34efea5f1c5efc1ee0eae7947afc617046b73fe35ebca57746de49/h2oai/h2o-llmstudio"}],"tags":[],"removed":false,"created":"2023-07-07T15:52:42.000Z","lastUpdate":"2023-07-07T15:52:42.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"github.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049860,"collectionId":36370053},{"_id":619049859,"link":"https://gitlab.com/asus-linux/asusctl","title":"asus-linux
+        / asusctl · GitLab","excerpt":"https://asus-linux.org/ : A control daemon,
+        CLI tools, and a collection of crates for interacting with ASUS ROG laptops","note":"","type":"link","user":{"$ref":"users","$id":1629134},"cover":"https://gitlab.com/uploads/-/system/project/avatar/20328305/asus.png","media":[{"type":"image","link":"https://gitlab.com/uploads/-/system/project/avatar/20328305/asus.png"}],"tags":[],"removed":false,"created":"2023-07-02T14:31:07.000Z","lastUpdate":"2023-07-02T14:31:07.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"gitlab.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049859,"collectionId":36370053},{"_id":619049858,"link":"https://domains.google.com/registrar?rapt=AEjHL4MNV7BFeVsQJu3OaR44pJQC0q0uxwx4LUVdVWTndEQIEprN3MrY4yqhlHECANRGmdnj_BChjzI1mVI-9zPKX2XFmUk-tA","title":"Google
+        Domains - My domains","excerpt":"Manage your domains, add or transfer in domains
+        and see billing history with Google Domains. Simplified domain management
+        right from your Google Account.","note":"","type":"link","user":{"$ref":"users","$id":1629134},"cover":"https://www.gstatic.com/images/branding/product/1x/google_domains_64dp.png","media":[{"type":"image","link":"https://www.gstatic.com/images/branding/product/1x/google_domains_64dp.png"}],"tags":[],"removed":false,"created":"2023-06-30T01:20:09.000Z","lastUpdate":"2023-06-30T01:20:09.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"domains.google.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049858,"collectionId":36370053},{"_id":619049857,"link":"https://github.com/gregnavis/active_record_doctor","title":"gregnavis/active_record_doctor:
+        Identify database issues before they hit pr","excerpt":"Identify database
+        issues before they hit production.","note":"","type":"link","user":{"$ref":"users","$id":1629134},"cover":"https://opengraph.githubassets.com/46dd6b5f7db5870ba72da111f1dcc92fa7f23707e0e4646e5e6c79e2062167bc/gregnavis/active_record_doctor","media":[{"type":"image","link":"https://opengraph.githubassets.com/46dd6b5f7db5870ba72da111f1dcc92fa7f23707e0e4646e5e6c79e2062167bc/gregnavis/active_record_doctor"}],"tags":[],"removed":false,"created":"2023-06-27T01:16:34.000Z","lastUpdate":"2023-06-27T01:16:34.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"github.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049857,"collectionId":36370053},{"_id":619049856,"link":"https://github.com/railsjazz/ask_chatgpt","title":"railsjazz/ask_chatgpt:
+        AI-Powered Assistant Gem right in your Rails console","excerpt":"AI-Powered
+        Assistant Gem right in your Rails console. Full power of ChatGPT in Rails
+        - GitHub - railsjazz/ask_chatgpt: AI-Powered Assistant Gem right in your Rails
+        console. Full power of ChatGPT in...","note":"","type":"link","user":{"$ref":"users","$id":1629134},"cover":"https://opengraph.githubassets.com/bf8aa122714299c767b9011481aa3c9b01510fa3032e62c14f09cda6ea9060ea/railsjazz/ask_chatgpt","media":[{"type":"image","link":"https://opengraph.githubassets.com/bf8aa122714299c767b9011481aa3c9b01510fa3032e62c14f09cda6ea9060ea/railsjazz/ask_chatgpt"}],"tags":[],"removed":false,"created":"2023-06-27T01:16:29.000Z","lastUpdate":"2023-06-27T01:16:29.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"github.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049856,"collectionId":36370053},{"_id":619049855,"link":"https://support.apple.com/en-us/HT208072","title":"How
+        to generate a recovery key - Apple Support","excerpt":"With two-factor authentication
+        and an Apple device, you have the option to generate a recovery key to help
+        improve account security. If you need to reset your password, you can then
+        use your recovery key to regain access to your Apple ID.","note":"","type":"article","user":{"$ref":"users","$id":1629134},"cover":"https://rdl.ink/render/https%3A%2F%2Fsupport.apple.com%2Fen-us%2FHT208072","media":[{"type":"image","link":"https://rdl.ink/render/https%3A%2F%2Fsupport.apple.com%2Fen-us%2FHT208072","screenshot":true}],"tags":[],"removed":false,"created":"2023-06-26T18:33:15.000Z","lastUpdate":"2023-06-26T18:33:15.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"support.apple.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049855,"collectionId":36370053},{"_id":619049854,"link":"https://www.mocra.com/how-do-i-setup-jumpstart-pro","title":"How
+        do I setup Jumpstart Pro?","excerpt":"I’ve launched every one of my Ruby on
+        Rails projects using Jumpstart Pro since mid 2020. I walk through how I get
+        started each time.","note":"","type":"article","user":{"$ref":"users","$id":1629134},"cover":"https://www.mocra.com/content/images/2023/05/Photo-on-26-5-2023-at-11.39-am--3-1.jpg","media":[{"type":"image","link":"https://www.mocra.com/content/images/2023/05/Photo-on-26-5-2023-at-11.39-am--3-1.jpg"}],"tags":[],"removed":false,"created":"2023-06-13T22:18:59.000Z","lastUpdate":"2023-06-13T22:18:59.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"mocra.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049854,"collectionId":36370053},{"_id":619049852,"link":"https://github.com/mebjas/html5-qrcode","title":"mebjas/html5-qrcode:
+        A cross platform HTML5 QR code reader. See end to end","excerpt":"A cross
+        platform HTML5 QR code reader. See end to end implementation at: https://scanapp.org
+        - GitHub - mebjas/html5-qrcode: A cross platform HTML5 QR code reader. See
+        end to end implementation at:...","note":"","type":"link","user":{"$ref":"users","$id":1629134},"cover":"https://opengraph.githubassets.com/c78f799d68c088eb1dc78e74aad45bbc232da4f338b3c9843a03b71a1bf85c32/mebjas/html5-qrcode","media":[{"type":"image","link":"https://opengraph.githubassets.com/c78f799d68c088eb1dc78e74aad45bbc232da4f338b3c9843a03b71a1bf85c32/mebjas/html5-qrcode"}],"tags":[],"removed":false,"created":"2023-06-12T00:03:06.000Z","lastUpdate":"2023-06-12T00:03:06.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"github.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049852,"collectionId":36370053},{"_id":619049851,"link":"https://docs.docker.com/engine/install/linux-postinstall","title":"Linux
+        post-installation steps for Docker Engine | Docker Documentation","excerpt":"Find
+        the recommended Docker Engine post-installation steps for Linux users, including
+        how to run Docker as a non-root user and more.","note":"","type":"article","user":{"$ref":"users","$id":1629134},"cover":"https://docs.docker.com/assets/favicons/docs@2x.ico","media":[{"type":"image","link":"https://docs.docker.com/assets/favicons/docs@2x.ico"}],"tags":[],"removed":false,"created":"2023-06-10T22:36:06.000Z","lastUpdate":"2023-06-10T22:36:06.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"docs.docker.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049851,"collectionId":36370053},{"_id":619049850,"link":"https://asus-linux.org/asusctl","title":"ASUS
+        NoteBook Linux","excerpt":"Linux guides and tools for ASUS Notebooks and Gaming
+        Laptops","note":"","type":"link","user":{"$ref":"users","$id":1629134},"cover":"https://rdl.ink/render/https%3A%2F%2Fasus-linux.org%2Fasusctl","media":[{"type":"image","link":"https://rdl.ink/render/https%3A%2F%2Fasus-linux.org%2Fasusctl","screenshot":true}],"tags":[],"removed":false,"created":"2023-06-10T01:38:48.000Z","lastUpdate":"2023-06-10T01:38:48.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"asus-linux.org","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049850,"collectionId":36370053},{"_id":619049849,"link":"https://asus-linux.org/blog","title":"ASUS
+        NoteBook Linux","excerpt":"Linux guides and tools for ASUS Notebooks and Gaming
+        Laptops","note":"","type":"link","user":{"$ref":"users","$id":1629134},"cover":"https://rdl.ink/render/https%3A%2F%2Fasus-linux.org%2Fblog","media":[{"type":"image","link":"https://rdl.ink/render/https%3A%2F%2Fasus-linux.org%2Fblog","screenshot":true}],"tags":[],"removed":false,"created":"2023-06-10T01:33:21.000Z","lastUpdate":"2023-06-10T01:33:21.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"asus-linux.org","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049849,"collectionId":36370053},{"_id":619049848,"link":"https://support.eufy.com/s/article/Using-NAS-Storage-Step-by-Step","title":"Using
+        NAS Storage Step by Step","excerpt":"What IS NAS Storage?  By enabling RTSP
+        (Real-Time Streaming Protocol) on specific Indoor Cam/eufyCam series, the
+        system will save all its recorded videos to your compatible NAS (Network-attached
+        Storage).    The RTSP function only works with NAS that supports the RTSP
+        protocol. In this FAQ, we will be using Synology NAS as an example.  This
+        function is now available on the Android App and iOS App V1.7.5 or later.
+           How Does It Work?  When the user is watching live or the camera detects
+        the event and starts recording, the video will stream and save to the NAS.
+        When the camera is in standby status, no video streams to the NAS. When you
+        store your videos to NAS, the videos must be played back via the NAS application.
+        eufy does not have permission to access to your data on NAS.     Up to two
+        cameras can be added to your NAS for free. If you wish to add additional cameras
+        you must pay the fee set by your NAS supplier.        What Should You Know?  If
+        you choose for your camera to record “events” only, you may receive frequent
+        notifications saying “Connection lost” or “Connection recovered” from NAS.
+        This is because when an event occurs, eufyCam/Indoor Cam will initiate streaming
+        via NAS. This is needed to connect to NAS.     How to make your NAS available
+        on eufyCam/Indoor Cam?  1. Install Surveillance Station on the NAS  On your
+        NAS, log into the NAS management page.Go to Package Center, search “surveillance
+        station” and install.Once installed, the Surveillance Station can be found
+        in the Main Menu.  Note: The software and package in different NAS may vary.    2.
+        Enable RTSP on Indoor Cam/eufyCams  Go to eufy Security App - a specific camera
+        that you want to stream to - Camera Settings - Storage - NAS(RTSP Stream).Enable
+        NAS RTSP Stream.Write down the RTSP stream link for later use.    3. Add Indoor
+        Cam/eufyCam to the NAS  Open the Surveillance Station.Find and click IP Camera
+        on the left side.On the new window, go to Add -> Add Camera.    Select Quick
+        Setup.       Name: give a name to this camera  Brand: choose User Define  Type:
+        keep Streaming - RTSP  Path: input RTSP link indicated on the App.     Trigger
+        the camera (you may walk or wave a hand in front of the camera), so that it
+        wakes up and pushes the stream to NAS.Then it will pass the Test Connection.
+        If it fails, please trigger the camera again and retry.    The captured videos
+        can be found in Surveillance Station - Recording. You are now ready to use
+        NAS.     You are now ready to use NAS!     FAQ  1. Which brand of NAS eufySecurity
+        support?  The RTSP feature on eufyCam/Indoor Cam only works with the NAS which
+        supports the RTSP protocol.Synology NAS is verified and compatible with the
+        eufy Security. Other brands will need you to discover.      2. Why did the
+        test fail?  Please make sure your NAS storage device and indoor camera/eufycam’s
+        HomeBase are connected to the same Wi-Fi router.Please make sure the indoor
+        camera/eufycam’s HomeBase has been set with a static IP address in your router.Please
+        check if you have entered the correct parameters.Press the \"Retry\" button
+        to try to setup the camera RTSP again.     3. Why don''t I have video clips
+        after completing the test?  The video clips will be saved to your NAS only
+        when motion is detected by the camera.When you test the connection in NAS,
+        only the live feed will work. The motion detection function will be disabled
+        during connection testing.It will take a few minutes for the system to upload
+        clips to NAS. Please wait at least 5 minutes to check the clips in NAS after
+        motion is detected.There will be some video clips missing due to when NAS
+        lost connection.If your router IP address changes, the RTSP stream link will
+        change as well. If this occurs, follow the RTSP setup guide to re-configure
+        the parameters.     4. Why do I frequently have the message in the NAS that
+        displays \"Connection recovered\" and \"Connection lost\"？  This is a normal
+        occurrence. You can ignore these messages. \"Connection recovered\" means
+        motion detection video clips will start to be saved to NAS. \" Connection
+        lost\" means video clips have been saved to NAS.   If you have questions regarding
+        how to set up NAS, please contact eufy customer support for further assistance.","note":"","type":"link","user":{"$ref":"users","$id":1629134},"cover":"https://rdl.ink/render/https%3A%2F%2Fsupport.eufy.com%2Fs%2Farticle%2FUsing-NAS-Storage-Step-by-Step","media":[{"type":"image","link":"https://rdl.ink/render/https%3A%2F%2Fsupport.eufy.com%2Fs%2Farticle%2FUsing-NAS-Storage-Step-by-Step","screenshot":true}],"tags":[],"removed":false,"created":"2023-06-09T00:16:07.000Z","lastUpdate":"2023-06-09T00:16:07.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"support.eufy.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049848,"collectionId":36370053}],"count":706,"collectionId":36370053}'
+  recorded_at: Mon, 22 Apr 2024 02:15:55 GMT
+- request:
+    method: get
+    uri: https://api.raindrop.io/rest/v1/raindrops/36370053?page=28
+    body:
+      encoding: ASCII-8BIT
+      string: ''
+    headers:
+      Authorization:
+      - Bearer <BEARER_TOKEN>
+      Content-Type:
+      - application/json
+      Connection:
+      - close
+      Host:
+      - api.raindrop.io
+      User-Agent:
+      - http.rb/5.2.0
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Mon, 22 Apr 2024 02:15:55 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Content-Length:
+      - '5728'
+      Connection:
+      - close
+      X-Powered-By:
+      - Express
+      Server-Timing:
+      - dc;desc=eu
+      - total;dur=17.820
+      Cache-Control:
+      - private
+      X-Ratelimit-Limit:
+      - '120'
+      X-Ratelimit-Remaining:
+      - '118'
+      X-Ratelimit-Reset:
+      - '1713752214'
+      X-Api-Cache:
+      - HIT
+      Etag:
+      - '"1660-ygGZqsEHTXsGFK9KeJn/LSxOUJE"'
+      Cf-Cache-Status:
+      - DYNAMIC
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 87821bda0cb37ac4-SJC
+      Alt-Svc:
+      - h3=":443"; ma=86400
+    body:
+      encoding: UTF-8
+      string: '{"result":true,"items":[{"_id":619049159,"link":"https://getpocket.com/explore/item/the-three-levels-of-self-awareness","title":"The
+        Three Levels of Self-Awareness","excerpt":"When we’re not even aware of our
+        own habits, routines, impulses, and reactions, then we no longer control them;
+        they control us.","note":"","type":"article","user":{"$ref":"users","$id":1629134},"cover":"https://pocket-image-cache.com/1200x/filters:format(jpg):extract_focal()/https%3A%2F%2Fs3.amazonaws.com%2Fpocket-syndicated-images%2Farticles%2F850%2F1567009866_direct.jpg","media":[{"type":"image","link":"https://pocket-image-cache.com/1200x/filters:format(jpg):extract_focal()/https%3A%2F%2Fs3.amazonaws.com%2Fpocket-syndicated-images%2Farticles%2F850%2F1567009866_direct.jpg"}],"tags":["self
+        improvement"],"removed":false,"created":"2021-05-12T15:57:14.000Z","lastUpdate":"2021-05-12T15:57:14.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"getpocket.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049159,"collectionId":36370053},{"_id":619049158,"link":"https://getpocket.com/explore/item/6-toxic-relationship-habits-most-people-think-are-normal","title":"6
+        Toxic Relationship Habits Most People Think Are Normal","excerpt":"Many toxic
+        relationship habits are baked into our culture and we end up accepting them
+        as normal. These are some of the worst ones.","note":"","type":"article","user":{"$ref":"users","$id":1629134},"cover":"https://pocket-image-cache.com/1200x/filters:format(jpg):extract_focal()/https%3A%2F%2Fpocket-syndicated-images.s3.amazonaws.com%2Farticles%2F638%2F1586267737_6toxic.png","media":[{"type":"image","link":"https://pocket-image-cache.com/1200x/filters:format(jpg):extract_focal()/https%3A%2F%2Fpocket-syndicated-images.s3.amazonaws.com%2Farticles%2F638%2F1586267737_6toxic.png"}],"tags":["for-allison"],"removed":false,"created":"2020-12-07T18:27:43.000Z","lastUpdate":"2020-12-07T18:27:43.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"getpocket.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049158,"collectionId":36370053},{"_id":619049157,"link":"https://pganalyze.com/blog/postgis-rails-geocoder","title":"PostGIS
+        vs. Geocoder in Rails","excerpt":"This article compares PostGIS in Rails with
+        Geocoder and highlights areas where you''ll want to (or need to) reach for
+        one over the other. Learn more here.","note":"","type":"article","user":{"$ref":"users","$id":1629134},"cover":"https://pganalyze.com/static/4188e705b7396703659a3cb7f29eab8b/fcb2f/postgis_rails_geocoder_og_pganalyze.jpg","media":[{"type":"image","link":"https://pganalyze.com/static/4188e705b7396703659a3cb7f29eab8b/fcb2f/postgis_rails_geocoder_og_pganalyze.jpg"}],"tags":["postgis","postgres","rails"],"removed":false,"created":"2020-10-10T22:58:02.000Z","lastUpdate":"2020-10-10T22:58:02.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"pganalyze.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049157,"collectionId":36370053},{"_id":619049156,"link":"https://nts.strzibny.name/ruby-build-and-ruby-install","title":"Installing
+        Ruby with ruby-build and ruby-install","excerpt":"When you need a unified
+        way to install CRuby and alternative Ruby implementations these days, it comes
+        down to ruby-build and ruby-install. Is there a difference?","note":"","type":"article","user":{"$ref":"users","$id":1629134},"cover":"https://nts.strzibny.name/img/ruby.png","media":[{"type":"image","link":"https://nts.strzibny.name/img/ruby.png"}],"tags":["install
+        ruby","rails"],"removed":false,"created":"2020-10-10T22:57:31.000Z","lastUpdate":"2020-10-10T22:57:31.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"nts.strzibny.name","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049156,"collectionId":36370053},{"_id":619049155,"link":"https://pragprog.com/tips","title":"Pragmatic
+        Bookshelf: By Developers, For Developers","excerpt":"We improve the lives
+        of professional developers. We create timely, practical books on classic and
+        cutting-edge topics to help you learn and practice your craft, and accelerate
+        your career. Come learn with us.","note":"","type":"link","user":{"$ref":"users","$id":1629134},"cover":"https://rdl.ink/render/https%3A%2F%2Fpragprog.com%2Ftips","media":[{"type":"image","link":"https://rdl.ink/render/https%3A%2F%2Fpragprog.com%2Ftips","screenshot":true}],"tags":["pragprog","programming"],"removed":false,"created":"2020-10-10T22:53:04.000Z","lastUpdate":"2020-10-10T22:53:04.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"pragprog.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049155,"collectionId":36370053},{"_id":619049154,"link":"https://lipanski.com/posts/activerecord-eager-loading","title":"Some
+        things you should know about eager loading in ActiveRecord | Florin Li","excerpt":"","note":"","type":"article","user":{"$ref":"users","$id":1629134},"cover":"https://lipanski.com/assets/images/logo.jpg","media":[{"type":"image","link":"https://lipanski.com/assets/images/logo.jpg"}],"tags":["activerecord","rails","sql","testing"],"removed":false,"created":"2020-10-10T22:49:46.000Z","lastUpdate":"2020-10-10T22:49:46.000Z","collection":{"$ref":"collections","$id":36370053,"oid":36370053},"highlights":[],"domain":"lipanski.com","creatorRef":{"_id":1629134,"name":"user123","avatar":"","email":""},"sort":619049154,"collectionId":36370053}],"count":706,"collectionId":36370053}'
+  recorded_at: Mon, 22 Apr 2024 02:15:55 GMT
+recorded_with: VCR 6.2.0

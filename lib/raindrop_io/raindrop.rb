@@ -4,6 +4,10 @@ module RaindropIo
   # @see https://developer.raindrop.io/v1/raindrops
   class Raindrop < RaindropIo::Base
     class << self
+      def default_page_size
+        25
+      end
+
       # Get multiple raindrops in a collection
       #
       # @param collection_id [String] The ID of the collection
@@ -16,7 +20,9 @@ module RaindropIo
       def raindrops(collection_id, options = {})
         response = get("/raindrops/#{collection_id}", options)
         if response.status.success? && response.parse["items"]
-          response.parse["items"].map { |attributes| Raindrop.new(attributes) }
+          drops = response.parse["items"].map { |attributes| Raindrop.new(attributes) }
+          total = response.parse["count"]
+          {total: total, items: drops}
         else
           RaindropIo::ApiError.new response
         end
