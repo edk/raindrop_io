@@ -10,10 +10,10 @@ class TestRaindropIoCollection < Minitest::Test
   end
 
   def test_collections
-    VCR.use_cassette("collections") do
+    VCR.use_cassette("all_collections_plus_system") do
       collection = RaindropIo::Collection.all
       refute collection.is_a?(RaindropIo::ApiError)
-      assert_equal collection.size, 3
+      assert_equal collection.size, 6
       assert_equal collection[0].title, "Unread"
       assert_equal collection[1].title, "tech"
     end

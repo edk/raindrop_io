@@ -31,10 +31,16 @@ module RaindropIo
     class Configuration
       attr_accessor :api_token
       attr_accessor :base_uri
+      attr_accessor :logger
 
       def initialize
         @base_uri = "https://api.raindrop.io/rest/v1"
         @api_token = nil
+        @logger = if defined?(Rails)
+          Rails.logger
+        else
+          Logger.new($stdout)
+        end
       end
     end
 
@@ -48,14 +54,24 @@ module RaindropIo
       end
 
       def get(path, options = {})
-        options[:headers] = headers
-        HTTP.headers(options).get(build_url(path))
+        resp = HTTP.headers(headers.merge(options)).get(build_url(path))
+        # log the response headers, including the rate limit headers
+        log_response_headers(resp)
+        resp
       end
 
       private
 
       def build_url(path)
         File.join [configuration.base_uri, path]
+      end
+
+      def log_response_headers(response)
+        return if configuration.logger.nil?
+        # log the response headers, including the rate limit headers
+        configuration.logger.info "Rate limit: #{response.headers["x-ratelimit-limit"]}," \
+        " remaining: #{response.headers["x-ratelimit-remaining"]}," \
+        " reset at: #{Time.at(response.headers["x-ratelimit-reset"].to_i)} time to reset: #{response.headers["x-ratelimit-reset"].to_i - Time.now.to_i}"
       end
 
       def headers

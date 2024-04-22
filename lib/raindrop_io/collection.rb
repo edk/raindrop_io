@@ -15,7 +15,30 @@ module RaindropIo
       def all
         response = get("/collections")
         if response.status.success? && response.parse["items"]
-          response.parse["items"].map { |attributes| Collection.new(attributes) }
+          bag1 = response.parse["items"].map { |attributes| Collection.new(attributes) }
+          bag2 = get_system_collections
+          # combine the two bags
+          bag1 + bag2
+        else
+          RaindropIo::ApiError.new response
+        end
+      end
+
+      def get_system_collections
+        rv = stats
+        if rv["result"] == true
+          rv["items"].map do |item|
+            col = find(item["_id"])
+            case item["_id"]
+            when -1
+              col.title = "Unsorted"
+            when -99
+              col.title = "Trash"
+            else
+              col.title = "system collection #{item["_id"]}" if col.title.nil?
+            end
+            col
+          end
         else
           RaindropIo::ApiError.new response
         end
