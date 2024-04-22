@@ -123,5 +123,6 @@ module RaindropIo
       # Empty Trash
       # DELETE https://api.raindrop.io/rest/v1/collection/-99
     end # end of class methods
+
   end
 end

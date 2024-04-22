@@ -4,7 +4,7 @@ module RaindropIo
       def get(path, options = {})
         RaindropIo::Api.get(path, options)
       end
-    end
+    end # end class << self
 
     def initialize(attributes = {})
       initialize_attributes(attributes)
@@ -20,5 +20,9 @@ module RaindropIo
         end
       end
     end
-  end
+    
+    def to_hash
+      @attributes
+    end
+  end # end class Base
 end

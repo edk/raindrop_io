@@ -21,7 +21,7 @@ module RaindropIo
           RaindropIo::ApiError.new response
         end
       end
-    end
+    end # end class << self
 
     def collections
       @groups[0]["collections"].map { |id| RaindropIo::Collection.find(id) }

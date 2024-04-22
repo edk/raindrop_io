@@ -35,6 +35,7 @@ Gem::Specification.new do |spec|
 
   # Uncomment to register a new dependency of your gem
   spec.add_dependency "http"
+  spec.add_development_dependency "awesome_print"
   spec.add_development_dependency "vcr"
   spec.add_development_dependency "webmock"
 
