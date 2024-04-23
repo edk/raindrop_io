@@ -5,7 +5,7 @@ require "optparse"
 require "json"
 require "logger"
 require "awesome_print"
-# require "sqlite3"
+require "sqlite3"
 require "pg"
 require "active_record"
 
@@ -63,69 +63,36 @@ end
 command = Command.new(ARGV)
 command.usage if command.command.nil? || command.object.nil?
 
-# class CustomJsonCoder < ActiveRecord::Coders::JSON
-#   def load(json)
-#     begin
-#       cleaned_json = json.gsub('=>', ':') # Replace '=>' with ':' before parsing
-#       super(cleaned_json)
-#     rescue JSON::ParserError => e
-#       rv = {}
-#       binding.pry
-#       rv
-#     end
-#   end
-# end
 class Collection < ActiveRecord::Base
   self.inheritance_column = nil
 
   def collection_attributes
-    int_fields = %w[_id count sort]
-    string_fields = %w[color created lastUpdate title view]
-    bool_fields = %w[expanded public]
-    object_fields = %w[access collaborators cover parent user]
-
-    ["broken", "cache", "creatorRef", "file", "important", "highlights",
-      "extra_data"]
+    {
+      int_fields: %w[_id count sort],
+      string_fields: %w[color created lastUpdate title view description],
+      bool_fields: %w[expanded public],
+      object_fields: %w[access collaborators cover parent user creatorRef],
+      known_extra_fields: %w[broken cache file important highlights lastAction slug author],
+      catch_all: %w[extra_data]
+    }
   end
 
   def self.do_migration
     ActiveRecord::Schema.define do
       unless table_exists?(:collections)
         create_table :collections do |t|
-          c_attrs.each do |attr|
-            t.text attr
-          end
+          attrs = collection_attributes
+          attrs[:int_fields].each { |attr| t.integer attr }
+          attrs[:string_fields].each { |attr| t.string attr }
+          attrs[:bool_fields].each { |attr| t.boolean attr }
+          attrs[:object_fields].each { |attr| t.json attr }
+          attrs[:known_extra_fields].each { |attr| t.json attr }
+          attrs[:catch_all].each { |attr| t.json attr }
         end
       end
     end
   end
 end
-
-#  id: 401,
-#  _id: "676898539",
-#  broken: nil,
-#  cache: nil,
-#  collection: "{\"$ref\":\"collections\",\"$id\":-1,\"oid\":-1}",
-#  cover:
-#   "https://opengraph.githubassets.com/c125e152f9b538cb8b890c7d82a0d5a",
-#  created: "2023-11-12T02:30:59.339Z",
-#  creatorRef: "{\"_id\":1629134,\"name\":\"edk112233\",\"avatar\":\"\",\"email\":\"\"}",
-#  domain: "github.com",
-#  excerpt:
-#   "GUI for a Vocal .",
-#  extra_data: "{\"reminder\":\"{\\\"date\\\":null}\",\"removed\":false,\"sort\":676898539,\"collectionId\":-1}",
-#  file: nil,
-#  highlights: "[]",
-#  important: "f",
-#  lastUpdate: "2023-11-12T02:30:59.339Z",
-#  link: "https://github.com/Anjok07/ultimatevocalremovergui",
-#  media:
-#   "[{\"link\":\"https://opengraph.githubassets.com/c125e152f9b538cb8b}]",
-#  note: "",
-#  tags: "[]",
-#  title: "Anjok07/ultimatevocalremovergui: GUI for a Vocal Remover that uses Deep Neural Networks.",
-#  type: "link",
-#  user: "{\"$ref\":\"users\",\"$id\":1629134}">
 
 # | \_id             | `Integer`       | The id of the collection.
 # | access           | `Object`
@@ -153,12 +120,6 @@ class Raindrop < ActiveRecord::Base
 
   serialized_attributes.each do |attr|
     serialize attr, coder: JSON
-    # # Define a custom getter for each attribute
-    # define_method(attr) do
-    #   JSON.parse(self[attr])
-    # rescue JSON::ParserError
-    #   self[attr]
-    # end
   end
   def self.do_migration
     ActiveRecord::Schema.define do
