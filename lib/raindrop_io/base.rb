@@ -6,6 +6,7 @@ module RaindropIo
       end
     end # end class << self
 
+    attr_reader :attributes
     def initialize(attributes = {})
       initialize_attributes(attributes)
       @attributes = attributes
@@ -20,9 +21,17 @@ module RaindropIo
         end
       end
     end
-    
+
     def to_hash
       @attributes
+    end
+
+    def to_h
+      to_hash
+    end
+
+    def to_json(*args)
+      @attributes.to_json(*args)
     end
   end # end class Base
 end

@@ -20,3 +20,6 @@ gem "yard"
 gem "redcarpet" # for yard
 gem "guard-yard", github: "edk/guard-yard"
 gem "webrick"
+gem "sqlite3", "~> 1.4"
+gem "pg"
+gem "activerecord"
