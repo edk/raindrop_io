@@ -1,0 +1,362 @@
+#!/usr/bin/env ruby
+
+require_relative "../lib/raindrop_io"
+require "optparse"
+require "json"
+require "logger"
+require "awesome_print"
+# require "sqlite3"
+require "pg"
+require "active_record"
+
+class Command
+  attr_accessor :command, :object, :options, :token
+
+  def initialize(args)
+    @object = args[0]
+    @command = args[1]
+    args.shift(2)
+    @options = args
+    # look for token and set it
+    if @options.include?("--token")
+      @token = @options[@options.index("--token") + 1]
+      @options.delete("--token")
+      @options.delete(@token)
+    end
+    if ENV["RAINDROP_TOKEN"].size > 0
+      @token = ENV["RAINDROP_TOKEN"]
+    end
+  end
+
+  def require_opt!(opt)
+    unless @options.include?(opt)
+      warn "ERROR: Option #{opt} is required\n\n"
+      usage
+    end
+  end
+
+  def get_option(opt)
+    if @options.include?(opt)
+      idx = @options.index(opt)
+      @options[idx + 1]
+    end
+  end
+
+  def grammar
+    {
+      "collection" => {"get" => [], "post" => [], "put" => [], "delete" => [], "list" => []},
+      "raindrop" => {"get" => [], "post" => [], "put" => [], "delete" => [], "list" => ["collection_id"]},
+      "user" => {"get" => [], "post" => [], "put" => [], "delete" => [], "current_user" => []}
+    }
+  end
+
+  def usage
+    usage_str = grammar.map { |obj, verbs|
+      "\t#{obj}: #{verbs.map { |cmd, req| "#{cmd}#{(req.size > 0) ? " (required: #{req.join(", ")})" : ""}" }.join(", ")}\n"
+    }.join("\n")
+    warn "Usage: #{$0} COMMAND OBJ [options]\n\n#{usage_str}\n"
+    warn " options:\n    --token <token> : set the access token or set the RAINDROP_TOKEN environment variable"
+    exit 1
+  end
+end
+
+command = Command.new(ARGV)
+command.usage if command.command.nil? || command.object.nil?
+
+# class CustomJsonCoder < ActiveRecord::Coders::JSON
+#   def load(json)
+#     begin
+#       cleaned_json = json.gsub('=>', ':') # Replace '=>' with ':' before parsing
+#       super(cleaned_json)
+#     rescue JSON::ParserError => e
+#       rv = {}
+#       binding.pry
+#       rv
+#     end
+#   end
+# end
+class Collection < ActiveRecord::Base
+  self.inheritance_column = nil
+
+  def collection_attributes
+    int_fields = %w[_id count sort]
+    string_fields = %w[color created lastUpdate title view]
+    bool_fields = %w[expanded public]
+    object_fields = %w[access collaborators cover parent user]
+
+    ["broken", "cache", "creatorRef", "file", "important", "highlights",
+      "extra_data"]
+  end
+
+  def self.do_migration
+    ActiveRecord::Schema.define do
+      unless table_exists?(:collections)
+        create_table :collections do |t|
+          c_attrs.each do |attr|
+            t.text attr
+          end
+        end
+      end
+    end
+  end
+end
+
+#  id: 401,
+#  _id: "676898539",
+#  broken: nil,
+#  cache: nil,
+#  collection: "{\"$ref\":\"collections\",\"$id\":-1,\"oid\":-1}",
+#  cover:
+#   "https://opengraph.githubassets.com/c125e152f9b538cb8b890c7d82a0d5a",
+#  created: "2023-11-12T02:30:59.339Z",
+#  creatorRef: "{\"_id\":1629134,\"name\":\"edk112233\",\"avatar\":\"\",\"email\":\"\"}",
+#  domain: "github.com",
+#  excerpt:
+#   "GUI for a Vocal .",
+#  extra_data: "{\"reminder\":\"{\\\"date\\\":null}\",\"removed\":false,\"sort\":676898539,\"collectionId\":-1}",
+#  file: nil,
+#  highlights: "[]",
+#  important: "f",
+#  lastUpdate: "2023-11-12T02:30:59.339Z",
+#  link: "https://github.com/Anjok07/ultimatevocalremovergui",
+#  media:
+#   "[{\"link\":\"https://opengraph.githubassets.com/c125e152f9b538cb8b}]",
+#  note: "",
+#  tags: "[]",
+#  title: "Anjok07/ultimatevocalremovergui: GUI for a Vocal Remover that uses Deep Neural Networks.",
+#  type: "link",
+#  user: "{\"$ref\":\"users\",\"$id\":1629134}">
+
+# | \_id             | `Integer`       | The id of the collection.
+# | access           | `Object`
+# | access.level     | `Integer`       | 1.  read only access (equal to `public=true`)  2.  collaborator with read only access  3.  collaborator with write only access  4.  owner
+# | access.draggable | `Boolean`       | Does it possible to change parent of this collection?
+# | collaborators    | `Object`        | When this object is present, means that collections is shared. Content of this object is private and not very useful. All sharing API methods [described here](https://developer.raindrop.io/v1/collections/sharing) |
+# | color            | `String`        | Primary color of collection cover as `HEX`
+# | count            | `Integer`       | Count of raindrops in collection
+# | cover            | `Array<String>` | Collection cover URL. This array always have one item due to legacy reasons
+# | created          | `String`        | When collection is created
+# | expanded         | `Boolean`       | Whether the collection’s sub-collections are expanded
+# | lastUpdate       | `String`        | When collection is updated
+# | parent           | `Object`
+# | parent.$id       | `Integer`       | The id of the parent collection. Not specified for root collections
+# | public           | `Boolean`       | Collection and raindrops that it contains will be accessible without authentication by public link
+# | sort             | `Integer`       | The order of collection (descending). Defines the position of the collection among all the collections with the same `parent.$id`
+# | title            | `String`        | Name of the collection
+# | user             | `Object`
+# | user.$id         | `Integer`       | Owner ID
+# | view             | `String`        | View style of collection, can be:*   `list` (default) `simple` `grid` `masonry` Pinterest like grid
+class Raindrop < ActiveRecord::Base
+  self.inheritance_column = nil
+
+  serialized_attributes = [:extra_data, :tags, :collection, :creatorRef, :media, :user]
+
+  serialized_attributes.each do |attr|
+    serialize attr, coder: JSON
+    # # Define a custom getter for each attribute
+    # define_method(attr) do
+    #   JSON.parse(self[attr])
+    # rescue JSON::ParserError
+    #   self[attr]
+    # end
+  end
+  def self.do_migration
+    ActiveRecord::Schema.define do
+      unless table_exists?(:raindrops)
+        create_table :raindrops do |t|
+          raindrop_attributes.each do |attr|
+            t.text attr
+          end
+        end
+      end # unless
+    end
+  end
+
+  def raindrop_attributes
+    (["_id", "broken", "cache", "collection", "cover", "created", "creatorRef", "domain", "excerpt", "file", "highlights", "important", "lastUpdate", "link", "media", "note", "tags", "title", "type", "user"] +
+    ["broken", "cache", "creatorRef", "file", "important", "highlights",
+      "extra_data"]).sort.uniq
+  end
+end
+
+class User < ActiveRecord::Base
+  self.inheritance_column = nil
+  def user_attributes
+    ["_id", "avatar", "config", "email", "files", "fullName", "groups", "lastAction",
+      "lastUpdate", "lastVisit", "name", "password", "pro", "registered", "tfa",
+      "extra_data"].sort.uniq
+  end
+
+  def self.do_migration
+    ActiveRecord::Schema.define do
+      unless table_exists?(:users)
+        create_table :users do |t|
+          u_attrs.each do |attr|
+            t.text attr
+          end
+        end
+      end # unless
+    end # Schema.define
+  end
+end
+
+class DBHandler
+  def db_type
+    # "postgres"
+    "sqlite"
+  end
+
+  def db_config
+    (db_type == "postgres") ? postgres_config : sqlite3_config
+  end
+
+  def sqlite3_config
+    {adapter: "sqlite3", database: "raindrop_io.db"}
+  end
+
+  def postgres_config
+    # username: "", # password: "your_password",
+    {adapter: "postgresql", database: "raindrop", encoding: "unicode", host: "localhost"}
+  end
+
+  def setup_db
+    # File.exist?("raindrop_io.db")
+
+    ActiveRecord::Base.establish_connection(db_config)
+    # the database needs to exist already, can't figure out how to create it from here
+    ActiveRecord::Base.connection
+  rescue
+    # ActiveRecord::Base.establish_connection(config.merge("database" => "postgres"))
+    # ActiveRecord::Base.connection.create_database(config["database"], config)
+    # ActiveRecord::Base.establish_connection(config)
+  end
+
+  def db_migrate
+    Collection.do_migration
+    Raindrop.do_migration
+    User.do_migration
+  end
+end
+
+puts "DEBUG: command: #{command.inspect}"
+class Processor
+  attr_accessor :command, :logger, :db
+
+  def initialize(command)
+    @db = DBHandler.new(:postgres)
+    ActiveRecord::Base.establish_connection(@db.db_config)
+    @command = command
+    @logger = Logger.new("raindrop_io.log")
+    @logger.level = Logger::DEBUG
+    # set the access token and logger
+    RaindropIo::Api.configure do |config|
+      config.api_token = command.token
+      config.logger = @logger
+    end
+  end
+
+  def load_all_raindrops(col_id)
+    drops = RaindropIo::Raindrop.raindrops(col_id)
+    total_pages = drops[:total] / RaindropIo::Raindrop.default_page_size
+    (0...total_pages).each do |page|
+      drops = RaindropIo::Raindrop.raindrops(col_id, page: page)
+      sleep_counter = 0
+
+      drops[:items].each do |drop|
+        puts drop.attributes.to_json
+        # only add if url is not already in the db
+        if ::Raindrop.where(link: drop.link).empty?
+          column_names = ::Raindrop.column_names
+          data = drop.to_hash
+          data.each do |k, v|
+            if v.is_a?(Hash) || v.is_a?(Array)
+              data[k] = v.to_json
+            end
+          end
+          # Separate the data into known and extra attributes
+          known_attrs = data.select { |k, v| column_names.include?(k) }
+          unknown_attrs = data.except(*column_names)
+
+          known_attrs["extra_data"] = unknown_attrs.to_json
+          d1 = ::Raindrop.create(known_attrs)
+          ap d1
+          sleep_counter += 1
+          if sleep_counter % 10 == 0
+            puts "Sleeping for 5 seconds"
+            sleep 2
+          end
+        else
+          puts "Duplicate link, skipping id: #{drop.id} #{drop.link}"
+        end
+      end
+      ap "Page: #{page} of #{total_pages}.  Raindrop.count: #{::Raindrop.count}"
+      logger.debug "Page: #{page} of #{total_pages}.  Raindrop.count: #{::Raindrop.count}"
+    end
+  end
+
+  def main
+    case command.object
+    when "command", "cmd"
+      case command.command
+      when "line"
+        # db.setup_db!
+        # load_all_raindrops(0)
+        binding.pry
+      end
+    when "collection"
+      case command.command
+      when "get"
+        ap RaindropIo::Collection.get(command.options[:id])
+      when "post"
+        ap RaindropIo::Collection.post(command.options[:id])
+      when "put"
+        ap RaindropIo::Collection.put(command.options[:id])
+      when "delete"
+        ap RaindropIo::Collection.delete(command.options[:id])
+      when "list"
+        collections = RaindropIo::Collection.all
+        ap collections
+      else
+        warn "ERROR: Command '#{command.command}' not found\n\n"
+      end
+    when "raindrop"
+      case command.command
+      when "get"
+        ap RaindropIo::Raindrop.get(command.options[:id])
+      when "post"
+        ap RaindropIo::Raindrop.post(command.options[:id])
+      when "put"
+        ap RaindropIo::Raindrop.put(command.options[:id])
+      when "delete"
+        ap RaindropIo::Raindrop.delete(command.options[:id])
+      when "list"
+        command.require_opt!("--collection_id")
+        drops = RaindropIo::Raindrop.raindrops(command.get_option("--collection_id"))
+        ap drops
+        json = JSON.generate(drops)
+        # todo: add pagination, maybe interactive with tty-prompt?
+        binding.pry
+      else
+        warn "ERROR: Command '#{command.command}' not found\n\n"
+      end
+    when "user"
+      case command.command
+      when "get"
+        ap RaindropIo::User.get(command.options[:id])
+      when "post"
+        ap RaindropIo::User.post(command.options[:id])
+      when "put"
+        ap RaindropIo::User.put(command.options[:id])
+      when "delete"
+        ap RaindropIo::User.delete(command.options[:id])
+      when "current_user"
+        ap RaindropIo::User.current_user
+      else
+        warn "ERROR: Command '#{command.command}' not found\n\n"
+      end
+    end
+  end
+end
+
+processor = Processor.new(command)
+processor.main
