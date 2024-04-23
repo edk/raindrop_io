@@ -66,26 +66,23 @@ command.usage if command.command.nil? || command.object.nil?
 class Collection < ActiveRecord::Base
   self.inheritance_column = nil
 
-  def collection_attributes
-    {
+  def self.do_migration
+    collection_attrs = {
       int_fields: %w[_id count sort],
       string_fields: %w[color created lastUpdate title view description],
       bool_fields: %w[expanded public],
       object_fields: %w[access collaborators cover parent user creatorRef],
       extra_fields: %w[broken cache file important highlights lastAction slug author extra_data]
     }
-  end
-
-  def self.do_migration
     ActiveRecord::Schema.define do
       unless table_exists?(:collections)
         create_table :collections do |t|
-          attrs = collection_attributes
+          attrs = collection_attrs
           attrs[:int_fields].each { |attr| t.integer attr }
           attrs[:string_fields].each { |attr| t.string attr }
           attrs[:bool_fields].each { |attr| t.boolean attr }
           attrs[:object_fields].each { |attr| t.json attr }
-          attrs[:known_extra_fields].each { |attr| t.json attr }
+          attrs[:extra_fields].each { |attr| t.json attr }
         end
       end
     end
@@ -114,26 +111,23 @@ end
 class Raindrop < ActiveRecord::Base
   self.inheritance_column = nil
 
-  def raindrop_attributes
-    {
+  def self.do_migration
+    raindrop_attrs = {
       int_fields: %w[_id count sort collectionId],
       string_fields: %w[color created domain excerpt note cover lastUpdate title type view link],
       bool_fields: %w[broken expanded public important removed],
       object_fields: %w[collection media tags collaborators parent user creatorRef cache file highlights reminder],
-      extra_data: %w[extra_data]
+      extra_fields: %w[extra_data]
     }
-  end
-
-  def self.do_migration
     ActiveRecord::Schema.define do
       unless table_exists?(:raindrops)
         create_table :raindrops do |t|
-          attrs = raindrop_attributes
+          attrs = raindrop_attrs
           attrs[:int_fields].each { |attr| t.integer attr }
           attrs[:string_fields].each { |attr| t.string attr }
           attrs[:bool_fields].each { |attr| t.boolean attr }
           attrs[:object_fields].each { |attr| t.json attr }
-          attrs[:extra_data].each { |attr| t.json attr }
+          attrs[:extra_fields].each { |attr| t.json attr }
         end
       end # unless
     end
@@ -155,9 +149,10 @@ class User < ActiveRecord::Base
 end
 
 class DBHandler
-  def db_type
-    # "postgres"
-    "sqlite"
+  attr_accessor :db_type
+  def initialize(db_type)
+    @db_type = db_type.to_s
+    raise "Invalid db_type" unless @db_type == "postgres" || @db_type == "sqlite3"
   end
 
   def db_config
@@ -173,22 +168,29 @@ class DBHandler
     {adapter: "postgresql", database: "raindrop", encoding: "unicode", host: "localhost"}
   end
 
-  def setup_db
+  def connect
     # File.exist?("raindrop_io.db")
-
     ActiveRecord::Base.establish_connection(db_config)
     # the database needs to exist already, can't figure out how to create it from here
     ActiveRecord::Base.connection
-  rescue
+  rescue => e
+    puts "WARNING: error connecting to db. #{e}"
     # ActiveRecord::Base.establish_connection(config.merge("database" => "postgres"))
     # ActiveRecord::Base.connection.create_database(config["database"], config)
     # ActiveRecord::Base.establish_connection(config)
   end
 
-  def db_migrate
+  def migrate!
     Collection.do_migration
     Raindrop.do_migration
     User.do_migration
+  end
+  
+  def drop!
+    tables = %w[collections raindrops users]
+    tables.each do |table|
+      ActiveRecord::Base.connection.drop_table table if ActiveRecord::Base.connection.table_exists? table
+    end
   end
 end
 
@@ -198,7 +200,8 @@ class Processor
 
   def initialize(command)
     @db = DBHandler.new(:postgres)
-    ActiveRecord::Base.establish_connection(@db.db_config)
+    @db.connect
+    # ActiveRecord::Base.establish_connection(@db.db_config)
     @command = command
     @logger = Logger.new("raindrop_io.log")
     @logger.level = Logger::DEBUG
@@ -253,7 +256,8 @@ class Processor
     when "command", "cmd"
       case command.command
       when "line"
-        # db.setup_db!
+        # db.migrate!
+        # db.drop!
         # load_all_raindrops(0)
         binding.pry
       end
