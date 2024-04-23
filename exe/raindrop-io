@@ -72,8 +72,7 @@ class Collection < ActiveRecord::Base
       string_fields: %w[color created lastUpdate title view description],
       bool_fields: %w[expanded public],
       object_fields: %w[access collaborators cover parent user creatorRef],
-      known_extra_fields: %w[broken cache file important highlights lastAction slug author],
-      catch_all: %w[extra_data]
+      extra_fields: %w[broken cache file important highlights lastAction slug author extra_data]
     }
   end
 
@@ -87,7 +86,6 @@ class Collection < ActiveRecord::Base
           attrs[:bool_fields].each { |attr| t.boolean attr }
           attrs[:object_fields].each { |attr| t.json attr }
           attrs[:known_extra_fields].each { |attr| t.json attr }
-          attrs[:catch_all].each { |attr| t.json attr }
         end
       end
     end
@@ -116,45 +114,40 @@ end
 class Raindrop < ActiveRecord::Base
   self.inheritance_column = nil
 
-  serialized_attributes = [:extra_data, :tags, :collection, :creatorRef, :media, :user]
-
-  serialized_attributes.each do |attr|
-    serialize attr, coder: JSON
+  def raindrop_attributes
+    {
+      int_fields: %w[_id count sort collectionId],
+      string_fields: %w[color created domain excerpt note cover lastUpdate title type view link],
+      bool_fields: %w[broken expanded public important removed],
+      object_fields: %w[collection media tags collaborators parent user creatorRef cache file highlights reminder],
+      extra_data: %w[extra_data]
+    }
   end
+
   def self.do_migration
     ActiveRecord::Schema.define do
       unless table_exists?(:raindrops)
         create_table :raindrops do |t|
-          raindrop_attributes.each do |attr|
-            t.text attr
-          end
+          attrs = raindrop_attributes
+          attrs[:int_fields].each { |attr| t.integer attr }
+          attrs[:string_fields].each { |attr| t.string attr }
+          attrs[:bool_fields].each { |attr| t.boolean attr }
+          attrs[:object_fields].each { |attr| t.json attr }
+          attrs[:extra_data].each { |attr| t.json attr }
         end
       end # unless
     end
-  end
-
-  def raindrop_attributes
-    (["_id", "broken", "cache", "collection", "cover", "created", "creatorRef", "domain", "excerpt", "file", "highlights", "important", "lastUpdate", "link", "media", "note", "tags", "title", "type", "user"] +
-    ["broken", "cache", "creatorRef", "file", "important", "highlights",
-      "extra_data"]).sort.uniq
   end
 end
 
 class User < ActiveRecord::Base
   self.inheritance_column = nil
-  def user_attributes
-    ["_id", "avatar", "config", "email", "files", "fullName", "groups", "lastAction",
-      "lastUpdate", "lastVisit", "name", "password", "pro", "registered", "tfa",
-      "extra_data"].sort.uniq
-  end
 
   def self.do_migration
     ActiveRecord::Schema.define do
       unless table_exists?(:users)
         create_table :users do |t|
-          u_attrs.each do |attr|
-            t.text attr
-          end
+          t.jsonb :data, null: false, default: {}
         end
       end # unless
     end # Schema.define
