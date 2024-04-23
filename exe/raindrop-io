@@ -81,8 +81,8 @@ class Collection < ActiveRecord::Base
           attrs[:int_fields].each { |attr| t.integer attr }
           attrs[:string_fields].each { |attr| t.string attr }
           attrs[:bool_fields].each { |attr| t.boolean attr }
-          attrs[:object_fields].each { |attr| t.json attr }
-          attrs[:extra_fields].each { |attr| t.json attr }
+          attrs[:object_fields].each { |attr| t.jsonb attr }
+          attrs[:extra_fields].each { |attr| t.jsonb attr }
         end
       end
     end
@@ -126,8 +126,8 @@ class Raindrop < ActiveRecord::Base
           attrs[:int_fields].each { |attr| t.integer attr }
           attrs[:string_fields].each { |attr| t.string attr }
           attrs[:bool_fields].each { |attr| t.boolean attr }
-          attrs[:object_fields].each { |attr| t.json attr }
-          attrs[:extra_fields].each { |attr| t.json attr }
+          attrs[:object_fields].each { |attr| t.jsonb attr }
+          attrs[:extra_fields].each { |attr| t.jsonb attr }
         end
       end # unless
     end
@@ -212,7 +212,7 @@ class Processor
     end
   end
 
-  def load_all_raindrops(col_id)
+  def load_all_raindrops(col_id, delay: 2)
     drops = RaindropIo::Raindrop.raindrops(col_id)
     total_pages = drops[:total] / RaindropIo::Raindrop.default_page_size
     (0...total_pages).each do |page|
@@ -235,15 +235,16 @@ class Processor
           unknown_attrs = data.except(*column_names)
 
           known_attrs["extra_data"] = unknown_attrs.to_json
-          d1 = ::Raindrop.create(known_attrs)
+          d1 = ::Raindrop.create!(known_attrs)
           ap d1
           sleep_counter += 1
           if sleep_counter % 10 == 0
-            puts "Sleeping for 5 seconds"
-            sleep 2
+            puts "Sleeping for #{delay} seconds"
+            sleep delay
           end
         else
-          puts "Duplicate link, skipping id: #{drop.id} #{drop.link}"
+          puts "Duplicate link, skipping id: #{drop} #{drop.link}"
+          logger.debug "Duplicate link, skipping id: #{drop} #{drop.link}"
         end
       end
       ap "Page: #{page} of #{total_pages}.  Raindrop.count: #{::Raindrop.count}"
