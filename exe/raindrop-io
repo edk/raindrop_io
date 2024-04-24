@@ -151,6 +151,7 @@ end
 
 class DBHandler
   attr_accessor :db_type
+
   def initialize(db_type)
     @db_type = db_type.to_s
     raise "Invalid db_type" unless @db_type == "postgres" || @db_type == "sqlite3"
@@ -191,6 +192,46 @@ class DBHandler
     tables = %w[collections raindrops users]
     tables.each do |table|
       ActiveRecord::Base.connection.drop_table table if ActiveRecord::Base.connection.table_exists? table
+    end
+  end
+
+  def dump_to_sql(file_path)
+    case @db_type
+    when "postgres"
+      config = postgres_config
+      args = ["-U", config[:username], "-h", config[:host], "-d", config[:database], "-f", file_path]
+      args.each_with_index do |arg, idx| # scan for empty args and remove them
+        args.delete_at(idx - 1) if arg.nil? || arg.empty?
+      end
+      cmd = "pg_dump #{args.compact.join(" ")}"
+      puts cmd
+      binding.pry
+      system(cmd)
+    when "sqlite3"
+      config = sqlite3_config
+      system("sqlite3 #{config[:database]} .dump > #{file_path}")
+    else
+      raise "Invalid db_type"
+    end
+  end
+
+  def load_from_sql(file_path)
+    case @db_type
+    when "postgres"
+      config = postgres_config
+      args = ["-U", config[:username], "-h", config[:host], "-d", config[:database], "-f", file_path]
+      args.each_with_index do |arg, idx| # scan for empty args and remove them
+        args.delete_at(idx - 1) if arg.nil? || arg.empty?
+      end
+      cmd = "pg_dump #{args.compact.join(" ")}"
+      puts cmd
+      binding.pry
+      system(cmd)
+    when "sqlite3"
+      config = sqlite3_config
+      system("sqlite3 #{config[:database]} .dump > #{file_path}")
+    else
+      raise "Invalid db_type"
     end
   end
 end
