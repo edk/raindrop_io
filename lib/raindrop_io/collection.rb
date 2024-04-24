@@ -9,8 +9,7 @@ module RaindropIo
   # | -99 | "Trash" collection    |
   class Collection < RaindropIo::Base
     class << self
-      # Get root collections
-      #
+      # Get root collections + system collections
       # GET https://api.raindrop.io/rest/v1/collections
       def all
         response = get("/collections")

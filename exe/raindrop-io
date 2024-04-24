@@ -185,7 +185,7 @@ class DBHandler
     Raindrop.do_migration
     User.do_migration
   end
-  
+
   def drop!
     tables = %w[collections raindrops users]
     tables.each do |table|
@@ -220,35 +220,57 @@ class Processor
       sleep_counter = 0
 
       drops[:items].each do |drop|
-        puts drop.attributes.to_json
-        # only add if url is not already in the db
-        if ::Raindrop.where(link: drop.link).empty?
+        if Raindrop.where(_id: drop._id).empty? # avoid dupes
           column_names = ::Raindrop.column_names
           data = drop.to_hash
-          data.each do |k, v|
-            if v.is_a?(Hash) || v.is_a?(Array)
-              data[k] = v.to_json
-            end
-          end
-          # Separate the data into known and extra attributes
+          # Separate the data into known and extra attributes, since things change
           known_attrs = data.select { |k, v| column_names.include?(k) }
           unknown_attrs = data.except(*column_names)
-
-          known_attrs["extra_data"] = unknown_attrs.to_json
+          known_attrs["extra_data"] = unknown_attrs
           d1 = ::Raindrop.create!(known_attrs)
-          ap d1
           sleep_counter += 1
           if sleep_counter % 10 == 0
             puts "Sleeping for #{delay} seconds"
             sleep delay
           end
         else
-          puts "Duplicate link, skipping id: #{drop} #{drop.link}"
-          logger.debug "Duplicate link, skipping id: #{drop} #{drop.link}"
+          puts "Duplicate link, skipping _id: #{drop._id} #{drop.link}"
+          logger.debug "Duplicate link, skipping _id: #{drop._id} #{drop.link}"
         end
       end
       ap "Page: #{page} of #{total_pages}.  Raindrop.count: #{::Raindrop.count}"
       logger.debug "Page: #{page} of #{total_pages}.  Raindrop.count: #{::Raindrop.count}"
+    end
+  end
+
+  def load_all_collections(delay: 3)
+    collections = RaindropIo::Collection.all
+    # is there paging?  how do I get everything including their children?
+    collections.each do |col|
+      ap col.attributes.to_json
+      binding.pry
+      # only add if url is not already in the db
+      if Collection.where(_id: col._id).empty?
+        column_names = ::Collection.column_names
+        data = col.to_hash
+        binding.pry
+        data.each do |k, v|
+          if v.is_a?(Hash) || v.is_a?(Array)
+            data[k] = v
+          end
+        end
+        # Separate the data into known and extra attributes
+        known_attrs = data.select { |k, v| column_names.include?(k) }
+        unknown_attrs = data.except(*column_names)
+
+        known_attrs["extra_data"] = unknown_attrs
+        c1 = ::Collection.create!(known_attrs)
+        ap c1
+        sleep delay
+      else
+        puts "Duplicate collection, skipping id: #{col} #{col._id}"
+        logger.debug "Duplicate collection, skipping id: #{col} #{col._id}"
+      end
     end
   end
 

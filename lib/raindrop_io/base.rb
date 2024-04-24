@@ -14,7 +14,7 @@ module RaindropIo
 
     def initialize_attributes(attributes)
       attributes.each do |key, value|
-        variable_name = (key == "_id") ? :id : key.to_sym
+        variable_name = key.to_sym
         instance_variable_set(:"@#{variable_name}", value)
         unless self.class.method_defined?(variable_name)
           self.class.send(:attr_accessor, variable_name)
