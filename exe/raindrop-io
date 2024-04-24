@@ -141,6 +141,7 @@ class User < ActiveRecord::Base
     ActiveRecord::Schema.define do
       unless table_exists?(:users)
         create_table :users do |t|
+          t.integer :_id
           t.jsonb :data, null: false, default: {}
         end
       end # unless
@@ -243,34 +244,29 @@ class Processor
     end
   end
 
-  def load_all_collections(delay: 3)
+  def load_all_collections(delay: 2)
     collections = RaindropIo::Collection.all
     # is there paging?  how do I get everything including their children?
     collections.each do |col|
-      ap col.attributes.to_json
-      binding.pry
-      # only add if url is not already in the db
       if Collection.where(_id: col._id).empty?
-        column_names = ::Collection.column_names
+        column_names = Collection.column_names
         data = col.to_hash
-        binding.pry
-        data.each do |k, v|
-          if v.is_a?(Hash) || v.is_a?(Array)
-            data[k] = v
-          end
-        end
-        # Separate the data into known and extra attributes
         known_attrs = data.select { |k, v| column_names.include?(k) }
         unknown_attrs = data.except(*column_names)
-
         known_attrs["extra_data"] = unknown_attrs
         c1 = ::Collection.create!(known_attrs)
-        ap c1
-        sleep delay
+        # sleep delay
       else
-        puts "Duplicate collection, skipping id: #{col} #{col._id}"
-        logger.debug "Duplicate collection, skipping id: #{col} #{col._id}"
+        puts "Duplicate collection, skipping _id: #{col._id} #{col.title}"
+        logger.debug "Duplicate collection, skipping _id: #{col._id} #{col.title}"
       end
+    end
+  end
+
+  def load_user
+    user = RaindropIo::User.current_user
+    if User.where(_id: user._id).empty?
+      u1 = User.create!(_id: user._id, data: user.to_hash)
     end
   end
 
@@ -282,6 +278,8 @@ class Processor
         # db.migrate!
         # db.drop!
         # load_all_raindrops(0)
+        # load_all_collections
+        # load_user
         binding.pry
       end
     when "collection"
