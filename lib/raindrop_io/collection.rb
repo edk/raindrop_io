@@ -16,8 +16,9 @@ module RaindropIo
         if response.status.success? && response.parse["items"]
           bag1 = response.parse["items"].map { |attributes| Collection.new(attributes) }
           bag2 = get_system_collections
-          # combine the two bags
-          bag1 + bag2
+          bag3 = childrens
+
+          bag1 + bag2 + bag3 # combine them all
         else
           RaindropIo::ApiError.new response
         end
