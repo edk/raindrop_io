@@ -205,7 +205,6 @@ class DBHandler
       end
       cmd = "pg_dump #{args.compact.join(" ")}"
       puts cmd
-      binding.pry
       system(cmd)
     when "sqlite3"
       config = sqlite3_config
@@ -225,7 +224,6 @@ class DBHandler
       end
       cmd = "pg_dump #{args.compact.join(" ")}"
       puts cmd
-      binding.pry
       system(cmd)
     when "sqlite3"
       config = sqlite3_config
@@ -269,7 +267,7 @@ class Processor
           known_attrs = data.select { |k, v| column_names.include?(k) }
           unknown_attrs = data.except(*column_names)
           known_attrs["extra_data"] = unknown_attrs
-          d1 = ::Raindrop.create!(known_attrs)
+          Raindrop.create!(known_attrs)
           sleep_counter += 1
           if sleep_counter % 10 == 0
             puts "Sleeping for #{delay} seconds"
@@ -295,7 +293,7 @@ class Processor
         known_attrs = data.select { |k, v| column_names.include?(k) }
         unknown_attrs = data.except(*column_names)
         known_attrs["extra_data"] = unknown_attrs
-        c1 = ::Collection.create!(known_attrs)
+        Collection.create!(known_attrs)
         # sleep delay
       else
         puts "Duplicate collection, skipping _id: #{col._id} #{col.title}"
@@ -307,7 +305,7 @@ class Processor
   def load_user
     user = RaindropIo::User.current_user
     if User.where(_id: user._id).empty?
-      u1 = User.create!(_id: user._id, data: user.to_hash)
+      User.create!(_id: user._id, data: user.to_hash)
     end
   end
 
@@ -321,21 +319,13 @@ class Processor
         # load_all_raindrops(0)
         # load_all_collections
         # load_user
-        binding.pry
+        binding.pry # rubocop:disable Lint/Debugger
       end
     when "collection"
       case command.command
-      when "get"
-        ap RaindropIo::Collection.get(command.options[:id])
-      when "post"
-        ap RaindropIo::Collection.post(command.options[:id])
-      when "put"
-        ap RaindropIo::Collection.put(command.options[:id])
-      when "delete"
-        ap RaindropIo::Collection.delete(command.options[:id])
       when "list"
-        collections = RaindropIo::Collection.all
-        ap collections
+        collections = Collection.all
+        ap collections.as_json
       else
         warn "ERROR: Command '#{command.command}' not found\n\n"
       end
@@ -350,23 +340,13 @@ class Processor
       when "delete"
         ap RaindropIo::Raindrop.delete(command.options[:id])
       when "list"
-        command.require_opt!("--collection_id")
-        drops = RaindropIo::Raindrop.raindrops(command.get_option("--collection_id"))
-        ap drops
-        json = JSON.generate(drops)
-        # todo: add pagination, maybe interactive with tty-prompt?
-        binding.pry
+        raindrops = Raindrop.all
+        ap raindrops.as_json
       else
         warn "ERROR: Command '#{command.command}' not found\n\n"
       end
     when "user"
       case command.command
-      when "get"
-        ap RaindropIo::User.get(command.options[:id])
-      when "post"
-        ap RaindropIo::User.post(command.options[:id])
-      when "put"
-        ap RaindropIo::User.put(command.options[:id])
       when "delete"
         ap RaindropIo::User.delete(command.options[:id])
       when "current_user"
@@ -374,6 +354,8 @@ class Processor
       else
         warn "ERROR: Command '#{command.command}' not found\n\n"
       end
+    else
+      puts "ERROR: command '#{command.object}' not found\n\n"
     end
   end
 end
