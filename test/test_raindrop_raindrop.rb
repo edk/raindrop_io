@@ -34,9 +34,6 @@ class TestRaindropIoRaindrop < Minitest::Test
     end
   end
 
-  def test_raindrops_pagination
-  end
-
   # def test_single_raindrop
   #   VCR.use_cassette('single_raindrop') do
   #     response = api.raindrop("768481303")

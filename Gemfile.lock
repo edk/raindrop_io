@@ -78,6 +78,7 @@ GEM
       guard (>= 2.0.0)
       guard-compat (~> 1.0)
       standard
+    guess_html_encoding (0.0.11)
     hashdiff (1.1.0)
     http (5.2.0)
       addressable (~> 2.8)
@@ -113,6 +114,11 @@ GEM
     nenv (0.3.0)
     net-http (0.4.1)
       uri
+    nokogiri (1.16.4)
+      mini_portile2 (~> 2.8.2)
+      racc (~> 1.4)
+    nokogiri (1.16.4-arm64-darwin)
+      racc (~> 1.4)
     notiffany (0.1.3)
       nenv (~> 0.1)
       shellany (~> 0.0)
@@ -157,6 +163,9 @@ GEM
       faraday (>= 1)
       faraday-multipart (>= 1)
     ruby-progressbar (1.13.0)
+    ruby-readability (0.7.0)
+      guess_html_encoding (>= 0.0.4)
+      nokogiri (>= 1.6.0)
     shellany (0.0.1)
     sqlite3 (1.7.3)
       mini_portile2 (~> 2.8.0)
@@ -197,6 +206,8 @@ GEM
     webrick (1.8.1)
     wisper (2.0.1)
     yard (0.9.36)
+    yt (0.33.4)
+      activesupport
 
 PLATFORMS
   arm64-darwin-23
@@ -213,12 +224,14 @@ DEPENDENCIES
   guard-yard!
   minitest (~> 5.16)
   minitest-reporters
+  pastel
   pg
   pry
   raindrop_io!
   rake (~> 13.0)
   redcarpet
   ruby-openai
+  ruby-readability
   sqlite3 (~> 1.4)
   standard (~> 1.3)
   tty-prompt
@@ -226,6 +239,7 @@ DEPENDENCIES
   webmock
   webrick
   yard
+  yt
 
 BUNDLED WITH
    2.5.9

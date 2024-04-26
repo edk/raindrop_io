@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require_relative "../lib/raindrop_io"
+require "dotenv/load"
 require "optparse"
 require "json"
 require "logger"
@@ -8,6 +9,19 @@ require "awesome_print"
 require "sqlite3"
 require "pg"
 require "active_record"
+require "openai"
+require "tty-prompt"
+require "pastel"
+require "readability"
+require "net/http"
+require "uri"
+require "cgi"
+require "yt"
+
+Yt.configure do |config|
+  config.log_level = :debug
+  config.api_key = ENV["YOUTUBE_API_KEY"]
+end
 
 class Command
   attr_accessor :command, :object, :options, :token
@@ -132,6 +146,182 @@ class Raindrop < ActiveRecord::Base
       end # unless
     end
   end
+
+  def scrape_url(url)
+    source_url = URI.parse(url)
+    response = Net::HTTP.get_response(source_url)
+    Readability::Document.new(response.body).content
+  end
+
+  def model
+    # "gpt-4"
+    # "gtp-4-turbo"
+    "gpt-3.5-turbo"
+  end
+
+  # given the existing raindrop, and field such as title, excerpt, type, etc
+  # ask the LLM to generate a summary
+  def summarize_to_note(client:)
+    sys_prompt = "Given the title, the link and other information from a source, concisely summarize the following.  Depending on if this is a video, url, or playlist, website, etc. refer to it appropriately.  Only summarize the content given.  If there is not enough information to make a decision, return 'unknown'."
+
+    if link.include?("youtube.com")
+      puts Pastel.new.red.bold("Youtube link detected, extracting description.")
+
+      # if it's a youtube live link, extract the id
+      uri = URI.parse(link)
+      if uri.path.include?("/live")
+        yt_id = uri.path.split("/").last
+        parsed_url = {"v" => [yt_id]}
+      else
+        parsed_url = CGI.parse(URI.parse(link).query)
+      end
+      if parsed_url["v"].first
+        yt_id = parsed_url["v"].first
+        video = Yt::Video.new id: yt_id
+        # have the LLM summarize the description
+        prompt = "Summarize the following youtube description, refer to it as 'This video'.  Also reference the channel name, '#{video.channel_title}'.  Keep it short and concise as it will be added to the notes column of a bookmarks table.\ntitle: #{video.title}\ncategory: #{video.category_title}\ntags: #{video.tags.join(", ")}\ndescription: #{video.description}"
+      elsif parsed_url["list"].first
+        yt_id = parsed_url["list"].first
+        playlist = Yt::Playlist.new id: yt_id
+        prompt = "Summarize the following youtube playlist, refer to it as 'This youtube playlist'.  Keep it short and concise as it will be added to the notes column of a bookmarks table.\ntitle: #{playlist.title}\ndescription: #{playlist.description}"
+      else
+        puts "No video id found in url, skipping."
+        binding.pry # rubocop:disable Lint/Debugger
+      end
+      response = client.chat(
+        parameters: {
+          model: model,
+          messages: [
+            {role: "system", content: sys_prompt},
+            {role: "user", content: prompt}
+          ],
+          temperature: 0.2
+        }
+      )
+      self.note = response.dig("choices", 0, "message", "content")
+    else
+      content = scrape_url(link)
+      puts Pastel.new.green.bold("Scraped content: #{content[0..500].inspect}")
+    end
+
+    prompt = if content
+      "Summarize the following content, refer to it as best you can, it might be a blog, weekly newsletter, a news site, an article, a github repo, etc.  Try to be concise and specific as you can, for an expert. if it is a github repo, do not mention getting an account to contribute.  Keep it short and concise as it will be added to the notes column of a bookmarks table.\n#{content}"
+    else
+      "title: #{title}\nurl: #{link}\nexcerpt: #{excerpt}\nnote: #{note}\n"
+    end
+    response = client.chat(
+      parameters: {
+        model: model,
+        messages: [
+          {role: "system", content: sys_prompt},
+          {role: "user", content: prompt}
+        ],
+        temperature: 0.2
+      }
+    )
+    self.note = response.dig("choices", 0, "message", "content")
+  end
+
+  # given the existing raindrop, and field such as title, excerpt, type, etc
+  # ask the LLM to generate a set of tags
+  def tag(client:)
+    sys_prompt = "Given the title, the link and other information from a bookmark, generate a set of tags for the following text.  however, strive to keep the number of tags to a minimum, if there are multiple tags within the same area, chose a tag that cover the most, to keep the number of tags down.If there is not enough information to make a decision, return 'unknown'."
+    prompt = "#{title}\n#{link}\n#{excerpt}\n#{note}\n#{domain}"
+    response = client.chat(
+      parameters: {
+        model: model,
+        messages: [
+          {role: "system", content: sys_prompt},
+          {role: "user", content: prompt}
+        ],
+        temperature: 0.2
+      }
+    )
+    incoming_tag = response.dig("choices", 0, "message", "content").split.map { |i| i.delete("#").strip }
+    self.tags = incoming_tag.reject { |i| i =~ /^\p{Punct}$/ || i == "" }.compact
+  end
+
+  def pick_category(client:, collections:)
+    cleaned_collections = collections.map(&:title).compact.reject { |i| i == "" || i == "Unread" }
+    sys_prompt = "Given the title, the link and other information from a bookmark, categorize the following text into one of the following categories: #{cleaned_collections.join(", ")}\nRespond with ONLY the category from the list above, with no extra formatting or words.  If none apply, use 'unknown'."
+    prompt = "title: #{title}\nlink: #{link}\nexcerpt: #{excerpt}\nnote: #{note}\ndomain: #{domain}"
+    response = client.chat(
+      parameters: {
+        model: model,
+        messages: [
+          {role: "system", content: sys_prompt},
+          {role: "user", content: prompt}
+        ],
+        temperature: 0.2
+      }
+    )
+    collection_title = response.dig("choices", 0, "message", "content")
+    if collection_title == "unknown"
+      # ask if a new collection should be created
+      sys_prompt = "This does not currently fit any of the existing categories (#{cleaned_collections.join(", ")}).  Suggest a new category this bookmark can be filed under.  Respond with only the proposed category, it should be short, without any spaces or punctuation, with only dashes to separate words if necessary."
+      response = client.chat(
+        parameters: {
+          model: model,
+          messages: [
+            {role: "system", content: sys_prompt},
+            {role: "user", content: prompt}
+          ],
+          temperature: 0.2
+        }
+      )
+      proposed_collection_title = response.dig("choices", 0, "message", "content")
+      puts "Proposed collection title: #{proposed_collection_title}, use it to create a new collection? (yes/no)"
+      answer = $stdin.gets.chomp
+      if answer == "yes"
+        col = RaindropIo::Collection.create!(title: proposed_collection_title)
+        Collection.create!(title: proposed_collection_title)
+        return col
+      else
+        puts "No new collection created, dropping into debugger"
+        binding.pry # rubocop:disable Lint/Debugger
+      end
+    end
+    col = Collection.find_by(title: collection_title)
+    if col.nil?
+      binding.pry # rubocop:disable Lint/Debugger
+    end
+    col
+  end
+
+  def move_to_collection(target_collection)
+    self.collectionId = target_collection._id
+    self.collection = {"$ref" => "collections", "$id" => collectionId, "oid" => collectionId}
+    puts "Moving to collection #{Pastel.new.red.bold(target_collection.title)} (#{collection.inspect})!"
+  end
+
+  def suggest
+    RaindropIo::Raindrop.suggest(_id)
+  end
+
+  def pull_data
+  end
+
+  def push_data!
+    # update the raindrop with the new data
+    resp = RaindropIo::Raindrop.update(_id, data: attributes.except(:id, "id"))
+    if resp.is_a?(RaindropIo::Raindrop)
+      puts Pastel.new.green("Successfully updated raindrop, #{resp.attributes["title"]}")
+      # assign attributes from the resposne raindrop to the current and save
+      resp.attributes.each do |k, v|
+        if has_attribute?(k)
+          self[k] = v
+        else
+          self[:extra_data][k] = v
+        end
+      rescue
+        puts "Failed to assign #{k} to #{v}"
+        raise
+      end
+      save!
+    else
+      puts "Failed to update raindrop. #{resp.inspect}"
+    end
+  end
 end
 
 class User < ActiveRecord::Base
@@ -236,7 +426,7 @@ end
 
 puts "DEBUG: command: #{command.inspect}"
 class Processor
-  attr_accessor :command, :logger, :db
+  attr_accessor :command, :logger, :db, :openai_client, :pastel
 
   def initialize(command)
     @db = DBHandler.new(:postgres)
@@ -250,6 +440,8 @@ class Processor
       config.api_token = command.token
       config.logger = @logger
     end
+    @openai_client = OpenAI::Client.new(access_token: ENV["OPENAI_API_KEY"])
+    @pastel = ::Pastel.new
   end
 
   def load_all_raindrops(col_id, delay: 2)
@@ -267,7 +459,8 @@ class Processor
           known_attrs = data.select { |k, v| column_names.include?(k) }
           unknown_attrs = data.except(*column_names)
           known_attrs["extra_data"] = unknown_attrs
-          Raindrop.create!(known_attrs)
+          drop = Raindrop.create!(known_attrs)
+          ap drop.as_json
           sleep_counter += 1
           if sleep_counter % 10 == 0
             puts "Sleeping for #{delay} seconds"
@@ -300,6 +493,7 @@ class Processor
         logger.debug "Duplicate collection, skipping _id: #{col._id} #{col.title}"
       end
     end
+    Collection.all.map { |col| ap [col._id, col.title] }
   end
 
   def load_user
@@ -313,13 +507,66 @@ class Processor
     case command.object
     when "command", "cmd"
       case command.command
+      when "categorize"
+        # find all raindrops that are not categorized
+        Raindrop.where("collection ->> 'oid' = ?", "-1").each do |drop|
+          category = drop.pick_category(client: @openai_client, collections: Collection.all)
+          drop.move_to_collection(category)
+          drop.save!
+        end
+        binding.pry # rubocop:disable Lint/Debugger
       when "line"
         # db.migrate!
         # db.drop!
         # load_all_raindrops(0)
-        # load_all_collections
         # load_user
-        binding.pry # rubocop:disable Lint/Debugger
+        # ap models = @openai_client.models.list
+        # drop = Raindrop.find_by(_id: 775506251)
+        Raindrop.where("collection ->> 'oid' = ?", "-1").each do |drop|
+          drop.summarize_to_note(client: openai_client)
+          drop.tag(client: openai_client)
+          target_collection = drop.pick_category(client: @openai_client, collections: Collection.all)
+          if target_collection.nil?
+            puts pastel.red("No target collection found for #{drop.title}\nDrop id: #{drop.id}/#{drop._id}  #{pastel.bold(drop.title)}")
+            binding.pry # rubocop:disable Lint/Debugger
+            next
+          end
+          drop.move_to_collection(target_collection)
+          puts "\n"
+          drop.save!
+          drop.push_data!
+          puts "title: #{pastel.yellow(drop.title)}\n#{pastel.red.bold(drop.note)}\n#{drop.tags.map { |t| pastel.cyan(t) }.join(", ")}\n"
+          print "\nContine [enter], reload collections [c], move to another collection [m], debug [d], quit [q] : "
+          ans = $stdin.gets.chomp
+          case ans
+          when "d"
+            binding.pry # rubocop:disable Lint/Debugger
+          when "q"
+            exit 0
+          when "c"
+            load_all_collections
+          when "m"
+            prompt = TTY::Prompt.new
+            all_categories = Collection.all.map { |c| c.title }
+            new_category = prompt.enum_select("Select a category", all_categories)
+            target_collection = Collection.find_by(title: new_category)
+            drop.move_to_collection(target_collection)
+            drop.save!
+          when ""
+            puts "Continuing...\n"
+          else
+            puts "unknown command #{ans.inspect}\n\n"
+            binding.pry # rubocop:disable Lint/Debugger
+          end
+        end
+
+        # drop.summarize_to_note(client: openai_client)
+        # drop.tag(client: openai_client)
+        # target_collection = drop.pick_category(client: @openai_client, collections: Collection.all)
+        # drop.move_to_collection(target_collection)
+        # drop.save!
+        # drop.push_data!
+        # binding.pry # rubocop:disable Lint/Debugger
       end
     when "collection"
       case command.command

@@ -11,3 +11,4 @@
 doc
 raindrop_io.db*
 raindrop_io.log
+.env

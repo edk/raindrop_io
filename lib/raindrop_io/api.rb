@@ -59,6 +59,12 @@ module RaindropIo
         resp
       end
 
+      def put(path, options = {})
+        resp = HTTP.headers(headers).put(build_url(path), options)
+        log_response_headers(resp)
+        resp
+      end
+
       private
 
       def build_url(path)

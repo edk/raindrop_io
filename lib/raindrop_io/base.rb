@@ -4,6 +4,18 @@ module RaindropIo
       def get(path, options = {})
         RaindropIo::Api.get(path, options)
       end
+
+      def put(path, options = {})
+        RaindropIo::Api.put(path, options)
+      end
+
+      def post(path, options = {})
+        RaindropIo::Api.post(path, options)
+      end
+
+      def delete(path, options = {})
+        RaindropIo::Api.delete(path, options)
+      end
     end # end class << self
 
     attr_reader :attributes
