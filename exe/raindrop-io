@@ -17,6 +17,7 @@ require "poppler"
 require "net/http"
 require "uri"
 require "open-uri"
+require "puppeteer-ruby"
 require "cgi"
 require "yt"
 
@@ -149,25 +150,77 @@ class Raindrop < ActiveRecord::Base
     end
   end
 
-  def scrape_url(url)
+  def resolve_uri(base_uri, new_location)
+    return URI(new_location) if new_location.start_with?("http")
+    URI.join(base_uri, new_location)
+  end
+
+  def fetch_uri(uri, limit: 10)
+    raise ArgumentError, "HTTP redirect too deep" if limit.zero?
+
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = uri.scheme == "https"
+    request = Net::HTTP::Get.new(uri.request_uri)
+    request["User-Agent"] = ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"]
+
+    response = http.request(request)
+
+    case response
+    when Net::HTTPSuccess
+      response
+    when Net::HTTPRedirection
+      fetch_uri(resolve_uri(uri, response["location"]), limit: limit - 1)
+    else
+      response
+    end
+  end
+
+  def scrape_url(url, debug: false)
     source_url = URI.parse(url)
-    response = Net::HTTP.get_response(source_url)
+    response = fetch_uri(source_url)
 
-    # Ensure the response body is treated as UTF-8, replacing invalid and undefined characters
-    response_body_utf8 = response.body.encode("UTF-8", invalid: :replace, undef: :replace, replace: "?")
+    binding.pry if debug # rubocop:disable Lint/Debugger
+    content_type = response["content-type"]
+    if /forbidden/i.match?(response.message) ||
+        /You need to enable JavaScript/i.match?(response.body)
+      use_puppeteer = true
+      force_html = true
+      content_type = "text/html"
+    else
+      use_puppeteer = false
+      force_html = false
+    end
+    puts "DEBUG: content_type: #{content_type} force_html: #{force_html} use_puppeteer: #{use_puppeteer}"
 
-    case response["content-type"]
-    when "text/html"
-      Readability::Document.new(response_body_utf8).content
+    case content_type
+    when %r{text/html}
+      if !use_puppeteer
+        Readability::Document.new(response.body).content
+      else
+        content = nil
+        Puppeteer.launch(headless: true, args: ["--enable-javascript"]) do |browser|
+          page = browser.pages.first || browser.new_page
+          user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"
+          page.user_agent = user_agent
+          response = page.goto(url)
+          if response.status != 200
+            puts "Failed to load page: #{response.status}"
+            binding.pry
+            return nil
+          end
+          page.wait_for_timeout(3000) # Wait for JavaScript to execute
+          # page.wait_for_navigation(wait_until: "networkidle0")
+          content = page.evaluate("() => document.body.innerHTML")
+        end
+        puts "content: #{content[0..500].inspect}"
+        content = Readability::Document.new(content).content
+      end
     when "application/pdf"
       file = URI.open(url)
       pdf = Poppler::Document.new(file.path)
       pdf.map do |page|
         page.get_text
       end.join("\n")
-    else
-      puts "Warning unknown content type: #{response["content-type"]}"
-      Readability::Document.new(response_body_utf8).content
     end
   end
 
@@ -179,14 +232,14 @@ class Raindrop < ActiveRecord::Base
 
   # given the existing raindrop, and field such as title, excerpt, type, etc
   # ask the LLM to generate a summary
-  def summarize_to_note(client:)
-    sys_prompt = "Given the title, the link and other information from a source, concisely summarize the following.  Depending on if this is a video, url, or playlist, website, etc. refer to it appropriately.  Only summarize the content given.  If there is not enough information to make a decision, return 'unknown'."
+  def summarize_to_note(client:, alternative_url: nil, debug: false)
+    sys_prompt = "Given the title, the link and other information from a source, concisely summarize and describe the contents of the URI using the following information.  Depending on if this is a video, url, or playlist, website, etc. refer to it appropriately.  Only summarize and describe the content given for an expert.  If there is not enough information to make a decision, return 'unknown'."
 
     if link.include?("youtube.com")
       puts Pastel.new.red.bold("Youtube link detected, extracting description.")
 
       # if it's a youtube live link, extract the id
-      uri = URI.parse(link)
+      uri = URI.parse(alternative_url || link)
       if uri.path.include?("/live")
         yt_id = uri.path.split("/").last
         parsed_url = {"v" => [yt_id]}
@@ -218,10 +271,13 @@ class Raindrop < ActiveRecord::Base
       )
       self.note = response.dig("choices", 0, "message", "content")
     else
-      content = scrape_url(link)
+      uri = URI.parse(alternative_url || link)
+      content = scrape_url(uri.to_s, debug: debug)
       # truncate content to keep it under 3000 characters
+      binding.pry if content.nil?
       content = content[0..3000] if content.size > 3000
-      puts Pastel.new.green.bold("Scraped content: #{content[0..500].inspect}")
+      puts "DEBUG: content: #{content[0..500].inspect}" if debug
+      puts Pastel.new.yellow("Scraped content: #{content[0..500].inspect}")
     end
 
     prompt = if content
@@ -229,6 +285,7 @@ class Raindrop < ActiveRecord::Base
     else
       "title: #{title}\nurl: #{link}\nexcerpt: #{excerpt}\nnote: #{note}\n"
     end
+    binding.pry if debug # rubocop:disable Lint/Debugger
     response = client.chat(
       parameters: {
         model: model,
@@ -242,10 +299,17 @@ class Raindrop < ActiveRecord::Base
     self.note = response.dig("choices", 0, "message", "content")
   end
 
+  # @todo:
+  # retag existing bookmarks
+  def retag(raindrops)
+    # load the current tags
+    # use a prompt to parse and generate new tags based on more stringent criteria
+  end
+
   # given the existing raindrop, and field such as title, excerpt, type, etc
   # ask the LLM to generate a set of tags
   def tag(client:)
-    sys_prompt = "Given the title, the link and other information from a bookmark, generate a set of tags for the following text.  however, strive to keep the number of tags to a minimum, if there are multiple tags within the same area, chose a tag that cover the most, to keep the number of tags down. Do not generate empty, overly broad or meaningless tags that do not help find the content of this bookmark.  If there is not enough information to make a decision, return 'unknown'."
+    sys_prompt = "Given the title, the link and other information from a bookmark, generate a set of tags for the following text.  however, strive to keep the number of tags to a minimum, if there are multiple tags within the same area, chose a tag that cover the most, to keep the number of tags down. Do not generate empty, overly broad or meaningless tags that do not help find the content of this bookmark. for multi-word tags, use dashes between words.  e.g. Ruby-on-Rails, vs Ruby on Rails, or Visual-Studio-Code vs Visual Studio Code, as the tagging system is word based.  If there is not enough information to make a decision, return 'unknown'."
     prompt = "#{title}\n#{link}\n#{excerpt}\n#{note}\n#{domain}"
     response = client.chat(
       parameters: {
@@ -257,7 +321,7 @@ class Raindrop < ActiveRecord::Base
         temperature: 0.2
       }
     )
-    incoming_tag = response.dig("choices", 0, "message", "content").split.map { |i| i.delete("#").strip }
+    incoming_tag = response.dig("choices", 0, "message", "content").split.map { |i| i.delete("#").delete(",").strip }
     self.tags = incoming_tag.reject { |i| i =~ /^\p{Punct}$/ || i == "" }.compact
   end
 
@@ -276,7 +340,7 @@ class Raindrop < ActiveRecord::Base
       }
     )
     collection_title = response.dig("choices", 0, "message", "content")
-    if collection_title == "unknown"
+    if /unknown/i.match?(collection_title)
       # ask if a new collection should be created
       sys_prompt = "This does not currently fit any of the existing categories (#{cleaned_collections.join(", ")}).  Suggest a new category this bookmark can be filed under.  Respond with only the proposed category, it should be short, without any spaces or punctuation, with only dashes to separate words if necessary."
       response = client.chat(
@@ -303,6 +367,14 @@ class Raindrop < ActiveRecord::Base
     end
     col = Collection.find_by(title: collection_title)
     if col.nil?
+      # create new collection
+      attrs = {
+        title: collection_title,
+        public: false
+        # parent: {"$ref" => "collections", "$id" => parent_id, "oid" => parent_id}
+      }
+      debugger
+      col = RaindropIo::Collection.create!(attrs)
       binding.pry # rubocop:disable Lint/Debugger
     end
     col
@@ -311,7 +383,7 @@ class Raindrop < ActiveRecord::Base
   def move_to_collection(target_collection)
     self.collectionId = target_collection._id
     self.collection = {"$ref" => "collections", "$id" => collectionId, "oid" => collectionId}
-    puts "Moving to collection #{Pastel.new.red.bold(target_collection.title)} (#{collection.inspect})!"
+    puts "Moving to collection: #{Pastel.new.green.bold(target_collection.title)} (#{collection.inspect})!"
   end
 
   def suggest
@@ -464,7 +536,7 @@ class Processor
     @pastel = ::Pastel.new
   end
 
-  def load_all_raindrops(col_id, delay: 2)
+  def self.load_all_raindrops(col_id, delay: 2)
     drops = RaindropIo::Raindrop.raindrops(col_id)
     total_pages = drops[:total] / RaindropIo::Raindrop.default_page_size
     (0...total_pages).each do |page|
@@ -488,15 +560,15 @@ class Processor
           end
         else
           puts "Duplicate link, skipping _id: #{drop._id} #{drop.link}"
-          logger.debug "Duplicate link, skipping _id: #{drop._id} #{drop.link}"
+          # logger.debug "Duplicate link, skipping _id: #{drop._id} #{drop.link}"
         end
       end
       ap "Page: #{page} of #{total_pages}.  Raindrop.count: #{::Raindrop.count}"
-      logger.debug "Page: #{page} of #{total_pages}.  Raindrop.count: #{::Raindrop.count}"
+      # logger.debug "Page: #{page} of #{total_pages}.  Raindrop.count: #{::Raindrop.count}"
     end
   end
 
-  def load_all_collections(delay: 2)
+  def self.load_all_collections(delay: 2)
     collections = RaindropIo::Collection.all
     # is there paging?  how do I get everything including their children?
     collections.each do |col|
@@ -510,7 +582,7 @@ class Processor
         # sleep delay
       else
         puts "Duplicate collection, skipping _id: #{col._id} #{col.title}"
-        logger.debug "Duplicate collection, skipping _id: #{col._id} #{col.title}"
+        # logger.debug "Duplicate collection, skipping _id: #{col._id} #{col.title}"
       end
     end
     Collection.all.map { |col| ap [col._id, col.title] }
@@ -535,77 +607,108 @@ class Processor
           drop.save!
         end
         binding.pry # rubocop:disable Lint/Debugger
+      when "debug"
+        binding.pry # rubocop:disable Lint/Debugger
       when "line"
         # db.migrate!
         # db.drop!
-        # load_all_raindrops(0)
+        # self.class.load_all_raindrops(0)
         # load_user
         # ap models = @openai_client.models.list
         # drop = Raindrop.find_by(_id: 775506251)
         prompt = TTY::Prompt.new
-        Raindrop.where("collection ->> 'oid' = ?", "-1").each do |drop|
-          puts "\n#{pastel.yellow.bold(drop.title)} - #{drop.link}"
-          print "Contine/tag/categorize [enter], reload collections [r], move to another collection [m], fix summary [f], debug [d], quit [q] : "
-          ans = $stdin.gets.chomp
-          case ans
-          when "d"
-            binding.pry # rubocop:disable Lint/Debugger
-            continue
-          when "q"
-            exit 0
-          when "r"
-            load_all_collections
-            break
-          when "m"
-            all_categories = Collection.all.map { |c| c.title }.reject { |i| i == "" }
-            new_category = prompt.select("Select a category", all_categories, per_page: 20)
-            target_collection = Collection.find_by(title: new_category)
-            drop.move_to_collection(target_collection)
-            drop.save!
-            break
-          when "f"
-            puts "Current note: #{drop.id}/#{drop._id} #{drop.link} \n#{drop.note}"
-            ans = prompt.select("Edit current drop, or load another by _id?", %w[edit load])
-            if ans == "edit"
-              binding.pry # rubocop:disable Lint/Debugger
-              drop.save!
-            else
-              print "Enter id: "
-              id = $stdin.gets.chomp
-              drop = Raindrop.find_by(_id: id)
-              binding.pry # rubocop:disable Lint/Debugger
-              drop.save!
-            end
-            binding.pry # rubocop:disable Lint/Debugger
-          when ""
-            puts "Continuing...\n"
-          else
-            puts "unknown command #{ans.inspect}\n\n"
-            binding.pry # rubocop:disable Lint/Debugger
-            break
-          end
+        uncategorized_drops = Raindrop.where("collection ->> 'oid' = ?", "-1")
+        n = 0
+        uncategorized_drops.each do |drop|
+          n += 1
+          puts "\n\n\n\n(#{n}/#{uncategorized_drops.size}, #{uncategorized_drops.size - n} left) #{pastel.yellow.bold(drop.title)} - #{drop.link}"
 
           drop.summarize_to_note(client: openai_client)
           drop.tag(client: openai_client)
+          puts "tags: #{drop.tags.map { |t| pastel.cyan.bold(t) }.join(", ")}\n"
           target_collection = drop.pick_category(client: @openai_client, collections: Collection.all)
           if target_collection.nil?
             puts pastel.red("No target collection found for #{drop.title}\nDrop id: #{drop.id}/#{drop._id}  #{pastel.bold(drop.title)}")
             binding.pry # rubocop:disable Lint/Debugger
             next
           end
+          puts "drop.note: #{pastel.red.bold(drop.note)}\n"
           drop.move_to_collection(target_collection)
           puts "\n"
-          drop.save!
-          # ask to continue, or change the target collection
-          if prompt.select("Continue or change target collection?", %w[continue change]) == "change"
-            all_categories = Collection.all.map { |c| c.title }.reject { |i| i == "" }
+
+          print "Contine [enter], (r)eload collections, (u)se different url, (m)ove to another collection, (f)ix summary, (d)ebug, dele(t)e drop - for later recat, (q)uit : "
+
+          # design notes:
+          #  * need to adjust tags
+          #  * change category
+          #  * change summary, maybe the url is not giving useful info
+          #  * there might be tags or keywords that push to a category that we need to remember
+          #  * a way to create new tags and categories, and push past and future categorizations to them
+          #  TODO: maybe add descriptions to categories to help guide further refinements to the llm categorization
+          ans = $stdin.gets.chomp
+          case ans
+          when "d"
+            binding.pry # rubocop:disable Lint/Debugger
+            next
+          when "q"
+            exit 0
+          when "r"
+            self.class.load_all_collections
+            break
+          when "t"
+            drop.destroy
+            next
+          when "m"
+            all_categories = Collection.all.map { |c| c.title }.reject { |i| i == "" }.sort
             new_category = prompt.select("Select a category", all_categories, per_page: 20)
             target_collection = Collection.find_by(title: new_category)
             drop.move_to_collection(target_collection)
             drop.save!
+          when "u"
+            new_url = prompt.ask("Enter new url: ")
+            drop.summarize_to_note(client: openai_client, alternative_url: new_url)
+            drop.tag(client: openai_client)
+            puts "new drop.note: #{pastel.red.bold(drop.note)}\n"
+            if prompt.yes?("use new summary?")
+              all_categories = Collection.all.map { |c| c.title }.reject { |i| i == "" }
+              new_category = prompt.select("Select a category", all_categories, per_page: 20)
+              target_collection = Collection.find_by(title: new_category)
+              drop.move_to_collection(target_collection)
+              puts "saving..."
+              drop.save!
+            else
+              puts "exiting.."
+              exit 1
+            end
+          when "f"
+            puts "Current note: #{drop.id}/#{drop._id} #{drop.link} \n#{drop.note}"
+            ans = prompt.select("Edit current drop, or load another by _id?", %w[edit load])
+            if ans == "load"
+              print "Enter id: "
+              id = $stdin.gets.chomp
+              drop = Raindrop.find_by(_id: id)
+            end
+            binding.pry # rubocop:disable Lint/Debugger
+            drop.save!
+          when ""
+            puts "processing...\n"
+          else
+            puts "unknown command #{ans.inspect}\n\n"
+            binding.pry # rubocop:disable Lint/Debugger
+            break
           end
+
+          drop.save!
+          # ask to continue, or change the target collection
+          # if prompt.select("Continue or change target collection?", %w[continue change]) == "change"
+          #   all_categories = Collection.all.map { |c| c.title }.reject { |i| i == "" }
+          #   new_category = prompt.select("Select a category", all_categories, per_page: 20)
+          #   target_collection = Collection.find_by(title: new_category)
+          #   drop.move_to_collection(target_collection)
+          #   drop.save!
+          # end
           drop.push_data!
-          puts "title: #{pastel.yellow(drop.title)}\n#{pastel.red.bold(drop.note)}\n#{drop.tags.map { |t| pastel.cyan(t) }.join(", ")}\n"
+          puts "Updated remote with title: #{pastel.yellow(drop.title)}\n#{pastel.red.bold(drop.note)}\n#{drop.tags.map { |t| pastel.cyan(t) }.join(", ")}\n"
         end
 
         # drop.summarize_to_note(client: openai_client)

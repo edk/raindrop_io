@@ -65,6 +65,18 @@ module RaindropIo
         resp
       end
 
+      def post(path, options = {})
+        resp = HTTP.headers(headers).post(build_url(path), options)
+        log_response_headers(resp)
+        resp
+      end
+
+      def delete(path, options = {})
+        resp = HTTP.headers(headers).delete(build_url(path), options)
+        log_response_headers(resp)
+        resp
+      end
+
       private
 
       def build_url(path)

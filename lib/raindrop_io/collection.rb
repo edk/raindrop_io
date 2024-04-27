@@ -80,11 +80,37 @@ module RaindropIo
         end
       end
 
-      # @todo Implement the following methods
-
       # @todo Create collection
       # POST https://api.raindrop.io/rest/v1/collection
       # Create a new collection
+      def create!(attributes)
+        response = post("/collection", json: attributes)
+        if response.status.success? && response.parse["item"]
+          Collection.create! response.parse["item"]
+        else
+          RaindropIo::ApiError.new response
+        end
+      end
+
+      # DELETE https://api.raindrop.io/rest/v1/collection/{id}
+      # Remove an existing collection and all its descendants.
+      def destroy!(collection_id)
+        response = delete("/collection/#{collection_id}")
+        if response.status.success?
+          response.parse
+        else
+          RaindropIo::ApiError.new response
+        end
+      end
+
+      # Raindrops will be moved to "Trash" collection
+
+      # @todo Implement the following methods
+
+      # Remove multiple collections
+      # DELETE https://api.raindrop.io/rest/v1/collections
+      # Remove multiple collections at once.
+      # Nested collections are ignored (include ID's in ids array to remove them)
 
       # @todo
       # Update collection
@@ -95,16 +121,6 @@ module RaindropIo
       # Upload cover
       # PUT https://api.raindrop.io/rest/v1/collection/{id}/cover
       # It's possible to upload cover from desktop. PNG, GIF and JPEG supported
-
-      # @todo Remove collection
-      # DELETE https://api.raindrop.io/rest/v1/collection/{id}
-      # Remove an existing collection and all its descendants.
-      # Raindrops will be moved to "Trash" collection
-
-      # Remove multiple collections
-      # DELETE https://api.raindrop.io/rest/v1/collections
-      # Remove multiple collections at once.
-      # Nested collections are ignored (include ID's in ids array to remove them)
 
       # Reorder all collections
       # PUT https://api.raindrop.io/rest/v1/collections
