@@ -13,8 +13,10 @@ require "openai"
 require "tty-prompt"
 require "pastel"
 require "readability"
+require "poppler"
 require "net/http"
 require "uri"
+require "open-uri"
 require "cgi"
 require "yt"
 
@@ -150,7 +152,23 @@ class Raindrop < ActiveRecord::Base
   def scrape_url(url)
     source_url = URI.parse(url)
     response = Net::HTTP.get_response(source_url)
-    Readability::Document.new(response.body).content
+
+    # Ensure the response body is treated as UTF-8, replacing invalid and undefined characters
+    response_body_utf8 = response.body.encode("UTF-8", invalid: :replace, undef: :replace, replace: "?")
+
+    case response["content-type"]
+    when "text/html"
+      Readability::Document.new(response_body_utf8).content
+    when "application/pdf"
+      file = URI.open(url)
+      pdf = Poppler::Document.new(file.path)
+      pdf.map do |page|
+        page.get_text
+      end.join("\n")
+    else
+      puts "Warning unknown content type: #{response["content-type"]}"
+      Readability::Document.new(response_body_utf8).content
+    end
   end
 
   def model
@@ -201,6 +219,8 @@ class Raindrop < ActiveRecord::Base
       self.note = response.dig("choices", 0, "message", "content")
     else
       content = scrape_url(link)
+      # truncate content to keep it under 3000 characters
+      content = content[0..3000] if content.size > 3000
       puts Pastel.new.green.bold("Scraped content: #{content[0..500].inspect}")
     end
 
@@ -225,7 +245,7 @@ class Raindrop < ActiveRecord::Base
   # given the existing raindrop, and field such as title, excerpt, type, etc
   # ask the LLM to generate a set of tags
   def tag(client:)
-    sys_prompt = "Given the title, the link and other information from a bookmark, generate a set of tags for the following text.  however, strive to keep the number of tags to a minimum, if there are multiple tags within the same area, chose a tag that cover the most, to keep the number of tags down.If there is not enough information to make a decision, return 'unknown'."
+    sys_prompt = "Given the title, the link and other information from a bookmark, generate a set of tags for the following text.  however, strive to keep the number of tags to a minimum, if there are multiple tags within the same area, chose a tag that cover the most, to keep the number of tags down. Do not generate empty, overly broad or meaningless tags that do not help find the content of this bookmark.  If there is not enough information to make a decision, return 'unknown'."
     prompt = "#{title}\n#{link}\n#{excerpt}\n#{note}\n#{domain}"
     response = client.chat(
       parameters: {
@@ -522,7 +542,49 @@ class Processor
         # load_user
         # ap models = @openai_client.models.list
         # drop = Raindrop.find_by(_id: 775506251)
+        prompt = TTY::Prompt.new
         Raindrop.where("collection ->> 'oid' = ?", "-1").each do |drop|
+          puts "\n#{pastel.yellow.bold(drop.title)} - #{drop.link}"
+          print "Contine/tag/categorize [enter], reload collections [r], move to another collection [m], fix summary [f], debug [d], quit [q] : "
+          ans = $stdin.gets.chomp
+          case ans
+          when "d"
+            binding.pry # rubocop:disable Lint/Debugger
+            continue
+          when "q"
+            exit 0
+          when "r"
+            load_all_collections
+            break
+          when "m"
+            all_categories = Collection.all.map { |c| c.title }.reject { |i| i == "" }
+            new_category = prompt.select("Select a category", all_categories, per_page: 20)
+            target_collection = Collection.find_by(title: new_category)
+            drop.move_to_collection(target_collection)
+            drop.save!
+            break
+          when "f"
+            puts "Current note: #{drop.id}/#{drop._id} #{drop.link} \n#{drop.note}"
+            ans = prompt.select("Edit current drop, or load another by _id?", %w[edit load])
+            if ans == "edit"
+              binding.pry # rubocop:disable Lint/Debugger
+              drop.save!
+            else
+              print "Enter id: "
+              id = $stdin.gets.chomp
+              drop = Raindrop.find_by(_id: id)
+              binding.pry # rubocop:disable Lint/Debugger
+              drop.save!
+            end
+            binding.pry # rubocop:disable Lint/Debugger
+          when ""
+            puts "Continuing...\n"
+          else
+            puts "unknown command #{ans.inspect}\n\n"
+            binding.pry # rubocop:disable Lint/Debugger
+            break
+          end
+
           drop.summarize_to_note(client: openai_client)
           drop.tag(client: openai_client)
           target_collection = drop.pick_category(client: @openai_client, collections: Collection.all)
@@ -534,30 +596,16 @@ class Processor
           drop.move_to_collection(target_collection)
           puts "\n"
           drop.save!
-          drop.push_data!
-          puts "title: #{pastel.yellow(drop.title)}\n#{pastel.red.bold(drop.note)}\n#{drop.tags.map { |t| pastel.cyan(t) }.join(", ")}\n"
-          print "\nContine [enter], reload collections [c], move to another collection [m], debug [d], quit [q] : "
-          ans = $stdin.gets.chomp
-          case ans
-          when "d"
-            binding.pry # rubocop:disable Lint/Debugger
-          when "q"
-            exit 0
-          when "c"
-            load_all_collections
-          when "m"
-            prompt = TTY::Prompt.new
-            all_categories = Collection.all.map { |c| c.title }
-            new_category = prompt.enum_select("Select a category", all_categories)
+          # ask to continue, or change the target collection
+          if prompt.select("Continue or change target collection?", %w[continue change]) == "change"
+            all_categories = Collection.all.map { |c| c.title }.reject { |i| i == "" }
+            new_category = prompt.select("Select a category", all_categories, per_page: 20)
             target_collection = Collection.find_by(title: new_category)
             drop.move_to_collection(target_collection)
             drop.save!
-          when ""
-            puts "Continuing...\n"
-          else
-            puts "unknown command #{ans.inspect}\n\n"
-            binding.pry # rubocop:disable Lint/Debugger
           end
+          drop.push_data!
+          puts "title: #{pastel.yellow(drop.title)}\n#{pastel.red.bold(drop.note)}\n#{drop.tags.map { |t| pastel.cyan(t) }.join(", ")}\n"
         end
 
         # drop.summarize_to_note(client: openai_client)
