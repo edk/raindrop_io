@@ -151,6 +151,7 @@ class Raindrop < ActiveRecord::Base
   end
 
   def resolve_uri(base_uri, new_location)
+    new_location.tr!("\\", "/")
     return URI(new_location) if new_location.start_with?("http")
     URI.join(base_uri, new_location)
   end
@@ -373,6 +374,8 @@ class Raindrop < ActiveRecord::Base
         public: false
         # parent: {"$ref" => "collections", "$id" => parent_id, "oid" => parent_id}
       }
+      puts "we are here in this exception because collection_title is #{collection_title}"
+      # we can either give choices to existing collectioons, or create a new one
       debugger
       col = RaindropIo::Collection.create!(attrs)
       binding.pry # rubocop:disable Lint/Debugger
@@ -607,9 +610,9 @@ class Processor
           drop.save!
         end
         binding.pry # rubocop:disable Lint/Debugger
-      when "debug"
-        binding.pry # rubocop:disable Lint/Debugger
       when "line"
+        binding.pry # rubocop:disable Lint/Debugger
+      when "cat"
         # db.migrate!
         # db.drop!
         # self.class.load_all_raindrops(0)
@@ -621,7 +624,7 @@ class Processor
         n = 0
         uncategorized_drops.each do |drop|
           n += 1
-          puts "\n\n\n\n(#{n}/#{uncategorized_drops.size}, #{uncategorized_drops.size - n} left) #{pastel.yellow.bold(drop.title)} - #{drop.link}"
+          puts "\n\n\n\n(#{n}/#{uncategorized_drops.size}, #{uncategorized_drops.size - n} left) id: #{drop.id} #{pastel.yellow.bold(drop.title)} - #{drop.link}"
 
           drop.summarize_to_note(client: openai_client)
           drop.tag(client: openai_client)
@@ -645,6 +648,7 @@ class Processor
           #  * there might be tags or keywords that push to a category that we need to remember
           #  * a way to create new tags and categories, and push past and future categorizations to them
           #  TODO: maybe add descriptions to categories to help guide further refinements to the llm categorization
+          # categorization based on past categorizations?
           ans = $stdin.gets.chomp
           case ans
           when "d"
