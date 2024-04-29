@@ -6,6 +6,7 @@ require_relative "raindrop_io/base"
 require_relative "raindrop_io/user"
 require_relative "raindrop_io/raindrop"
 require_relative "raindrop_io/collection"
+require "logger"
 
 begin
   require "pry"

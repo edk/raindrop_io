@@ -39,7 +39,7 @@ module RaindropIo
         @logger = if defined?(Rails)
           Rails.logger
         else
-          Logger.new($stdout)
+          Logger.new($stdout) # the default ruby logger
         end
       end
     end
