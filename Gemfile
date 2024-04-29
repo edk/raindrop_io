@@ -31,4 +31,4 @@ gem "ruby-readability"
 # also need to "brew install poppler" or apt-get install libgirepository1.0-dev libpoppler-glib-dev
 gem "poppler"
 gem "yt"
-gem "puppeteer-ruby"
+gem "tanakai"

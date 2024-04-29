@@ -17,7 +17,7 @@ require "poppler"
 require "net/http"
 require "uri"
 require "open-uri"
-require "puppeteer-ruby"
+require "tanakai"
 require "cgi"
 require "yt"
 
@@ -30,55 +30,31 @@ class Command
   attr_accessor :command, :object, :options, :token
 
   def initialize(args)
-    @object = args[0]
-    @command = args[1]
-    args.shift(2)
-    @options = args
-    # look for token and set it
-    if @options.include?("--token")
-      @token = @options[@options.index("--token") + 1]
-      @options.delete("--token")
-      @options.delete(@token)
+    if !File.exist?(".env")
+      usage
     end
-    if ENV["RAINDROP_TOKEN"].size > 0
-      @token = ENV["RAINDROP_TOKEN"]
+    keys = %w[RAINDROP_TOKEN OPENAI_API_KEY YOUTUBE_API_KEY]
+    missing = []
+    keys.each do |key|
+      missing << key unless ENV[key].to_s.size > 0
     end
-  end
-
-  def require_opt!(opt)
-    unless @options.include?(opt)
-      warn "ERROR: Option #{opt} is required\n\n"
+    if missing.any?
+      warn "Missing required environment variables: #{missing.join(", ")}\n\n"
       usage
     end
   end
 
-  def get_option(opt)
-    if @options.include?(opt)
-      idx = @options.index(opt)
-      @options[idx + 1]
-    end
-  end
-
-  def grammar
-    {
-      "collection" => {"get" => [], "post" => [], "put" => [], "delete" => [], "list" => []},
-      "raindrop" => {"get" => [], "post" => [], "put" => [], "delete" => [], "list" => ["collection_id"]},
-      "user" => {"get" => [], "post" => [], "put" => [], "delete" => [], "current_user" => []}
-    }
-  end
-
   def usage
-    usage_str = grammar.map { |obj, verbs|
-      "\t#{obj}: #{verbs.map { |cmd, req| "#{cmd}#{(req.size > 0) ? " (required: #{req.join(", ")})" : ""}" }.join(", ")}\n"
-    }.join("\n")
-    warn "Usage: #{$0} COMMAND OBJ [options]\n\n#{usage_str}\n"
-    warn " options:\n    --token <token> : set the access token or set the RAINDROP_TOKEN environment variable"
+    warn "Usage: #{$0}\n\n"
+    warn " Set required variables in .env file\n"
+    warn "  RAINDROP_API_TOKEN=your_token\n"
+    warn "  OPENAI_API_KEY=your_key\n"
+    warn "  YOUTUBE_API_KEY=your_key\n"
     exit 1
   end
 end
 
 command = Command.new(ARGV)
-command.usage if command.command.nil? || command.object.nil?
 
 class Collection < ActiveRecord::Base
   self.inheritance_column = nil
@@ -588,7 +564,7 @@ class Processor
         # logger.debug "Duplicate collection, skipping _id: #{col._id} #{col.title}"
       end
     end
-    Collection.all.map { |col| ap [col._id, col.title] }
+    Collection.all.map { |col| [col._id, col.title] }
   end
 
   def load_user
@@ -599,6 +575,16 @@ class Processor
   end
 
   def main
+    prompt = TTY::Prompt.new
+    prompt.select("Choose an action", enum: ".") do |menu|
+      menu.choice "repl"
+      menu.choice "load raindrops"
+      menu.choice "list raindrops"
+      menu.choice "load collections"
+      menu.choice "list collections"
+      menu.choice "categorize drops"
+    end
+
     case command.object
     when "command", "cmd"
       case command.command
