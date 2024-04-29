@@ -77,6 +77,10 @@ module RaindropIo
         resp
       end
 
+      def get_config
+        configuration
+      end
+
       private
 
       def build_url(path)

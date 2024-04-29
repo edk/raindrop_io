@@ -26,6 +26,8 @@ gem "activerecord"
 gem "ruby-openai"
 gem "dotenv"
 gem "tty-prompt"
+gem "tty-pager"
+gem "tty-table"
 gem "pastel"
 gem "ruby-readability"
 # also need to "brew install poppler" or apt-get install libgirepository1.0-dev libpoppler-glib-dev

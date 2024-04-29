@@ -11,6 +11,8 @@ require "pg"
 require "active_record"
 require "openai"
 require "tty-prompt"
+require "tty-table"
+require "tty-pager"
 require "pastel"
 require "readability"
 require "poppler"
@@ -20,11 +22,6 @@ require "open-uri"
 require "tanakai"
 require "cgi"
 require "yt"
-
-Yt.configure do |config|
-  config.log_level = :debug
-  config.api_key = ENV["YOUTUBE_API_KEY"]
-end
 
 class Command
   attr_accessor :command, :object, :options, :token
@@ -55,6 +52,18 @@ class Command
 end
 
 command = Command.new(ARGV)
+Yt.configure do |config|
+  config.log_level = :debug
+  config.api_key = ENV["YOUTUBE_API_KEY"]
+end
+
+$logger = Logger.new("raindrop_io.log") # rubocop:disable Style/GlobalVars
+$logger.level = Logger::DEBUG # rubocop:disable Style/GlobalVars
+
+RaindropIo::Api.configure do |config|
+  config.api_token = ENV["RAINDROP_TOKEN"]
+  config.logger = $logger # rubocop:disable Style/GlobalVars
+end
 
 class Collection < ActiveRecord::Base
   self.inheritance_column = nil
@@ -182,7 +191,7 @@ class Raindrop < ActiveRecord::Base
           response = page.goto(url)
           if response.status != 200
             puts "Failed to load page: #{response.status}"
-            binding.pry
+            binding.pry # rubocop:disable Lint/Debugger
             return nil
           end
           page.wait_for_timeout(3000) # Wait for JavaScript to execute
@@ -247,11 +256,11 @@ class Raindrop < ActiveRecord::Base
         }
       )
       self.note = response.dig("choices", 0, "message", "content")
-    else
+    else # parse website
       uri = URI.parse(alternative_url || link)
       content = scrape_url(uri.to_s, debug: debug)
       # truncate content to keep it under 3000 characters
-      binding.pry if content.nil?
+      binding.pry if content.nil? # rubocop:disable Lint/Debugger
       content = content[0..3000] if content.size > 3000
       puts "DEBUG: content: #{content[0..500].inspect}" if debug
       puts Pastel.new.yellow("Scraped content: #{content[0..500].inspect}")
@@ -352,7 +361,6 @@ class Raindrop < ActiveRecord::Base
       }
       puts "we are here in this exception because collection_title is #{collection_title}"
       # we can either give choices to existing collectioons, or create a new one
-      debugger
       col = RaindropIo::Collection.create!(attrs)
       binding.pry # rubocop:disable Lint/Debugger
     end
@@ -495,7 +503,6 @@ class DBHandler
   end
 end
 
-puts "DEBUG: command: #{command.inspect}"
 class Processor
   attr_accessor :command, :logger, :db, :openai_client, :pastel
 
@@ -503,21 +510,18 @@ class Processor
     @db = DBHandler.new(:postgres)
     @db.connect
     # ActiveRecord::Base.establish_connection(@db.db_config)
-    @command = command
-    @logger = Logger.new("raindrop_io.log")
-    @logger.level = Logger::DEBUG
-    # set the access token and logger
-    RaindropIo::Api.configure do |config|
-      config.api_token = command.token
-      config.logger = @logger
-    end
+    @logger = $logger # rubocop:disable Style/GlobalVars
     @openai_client = OpenAI::Client.new(access_token: ENV["OPENAI_API_KEY"])
-    @pastel = ::Pastel.new
+    @pastel = Pastel.new
   end
 
-  def self.load_all_raindrops(col_id, delay: 2)
+  def self.load_all_raindrops_in_col(col_id, delay: 2)
+    rv = []
     drops = RaindropIo::Raindrop.raindrops(col_id)
     total_pages = drops[:total] / RaindropIo::Raindrop.default_page_size
+    if drops[:total] > 0 && total_pages == 0
+      total_pages = 1
+    end
     (0...total_pages).each do |page|
       drops = RaindropIo::Raindrop.raindrops(col_id, page: page)
       sleep_counter = 0
@@ -531,6 +535,7 @@ class Processor
           unknown_attrs = data.except(*column_names)
           known_attrs["extra_data"] = unknown_attrs
           drop = Raindrop.create!(known_attrs)
+          rv << drop
           ap drop.as_json
           sleep_counter += 1
           if sleep_counter % 10 == 0
@@ -539,12 +544,13 @@ class Processor
           end
         else
           puts "Duplicate link, skipping _id: #{drop._id} #{drop.link}"
-          # logger.debug "Duplicate link, skipping _id: #{drop._id} #{drop.link}"
+          logger.debug "Duplicate link, skipping _id: #{drop._id} #{drop.link}"
         end
       end
       ap "Page: #{page} of #{total_pages}.  Raindrop.count: #{::Raindrop.count}"
-      # logger.debug "Page: #{page} of #{total_pages}.  Raindrop.count: #{::Raindrop.count}"
+      logger.debug "Page: #{page} of #{total_pages}.  Raindrop.count: #{::Raindrop.count}"
     end
+    rv
   end
 
   def self.load_all_collections(delay: 2)
@@ -567,6 +573,8 @@ class Processor
     Collection.all.map { |col| [col._id, col.title] }
   end
 
+  # todo load collections and arrange them in a tree format
+
   def load_user
     user = RaindropIo::User.current_user
     if User.where(_id: user._id).empty?
@@ -574,179 +582,191 @@ class Processor
     end
   end
 
-  def main
+  def categorize_drops
     prompt = TTY::Prompt.new
-    prompt.select("Choose an action", enum: ".") do |menu|
-      menu.choice "repl"
-      menu.choice "load raindrops"
-      menu.choice "list raindrops"
-      menu.choice "load collections"
-      menu.choice "list collections"
-      menu.choice "categorize drops"
-    end
+    uncategorized_drops = Raindrop.where("collection ->> 'oid' = ?", "-1")
+    n = 0
+    uncategorized_drops.each do |drop|
+      n += 1
+      puts "\n\n\n\n(#{n}/#{uncategorized_drops.size}, #{uncategorized_drops.size - n} left) id: #{drop.id} #{pastel.yellow.bold(drop.title)} - #{drop.link}"
 
-    case command.object
-    when "command", "cmd"
-      case command.command
-      when "categorize"
-        # find all raindrops that are not categorized
-        Raindrop.where("collection ->> 'oid' = ?", "-1").each do |drop|
-          category = drop.pick_category(client: @openai_client, collections: Collection.all)
-          drop.move_to_collection(category)
-          drop.save!
-        end
+      drop.summarize_to_note(client: openai_client)
+      drop.tag(client: openai_client)
+      puts "tags: #{drop.tags.map { |t| pastel.cyan.bold(t) }.join(", ")}\n"
+      target_collection = drop.pick_category(client: @openai_client, collections: Collection.all)
+      if target_collection.nil?
+        puts pastel.red("No target collection found for #{drop.title}\nDrop id: #{drop.id}/#{drop._id}  #{pastel.bold(drop.title)}")
         binding.pry # rubocop:disable Lint/Debugger
-      when "line"
-        binding.pry # rubocop:disable Lint/Debugger
-      when "cat"
-        # db.migrate!
-        # db.drop!
-        # self.class.load_all_raindrops(0)
-        # load_user
-        # ap models = @openai_client.models.list
-        # drop = Raindrop.find_by(_id: 775506251)
-        prompt = TTY::Prompt.new
-        uncategorized_drops = Raindrop.where("collection ->> 'oid' = ?", "-1")
-        n = 0
-        uncategorized_drops.each do |drop|
-          n += 1
-          puts "\n\n\n\n(#{n}/#{uncategorized_drops.size}, #{uncategorized_drops.size - n} left) id: #{drop.id} #{pastel.yellow.bold(drop.title)} - #{drop.link}"
+        next
+      end
+      puts "drop.note: #{pastel.red.bold(drop.note)}\n"
+      drop.move_to_collection(target_collection)
+      puts "\n"
 
-          drop.summarize_to_note(client: openai_client)
-          drop.tag(client: openai_client)
-          puts "tags: #{drop.tags.map { |t| pastel.cyan.bold(t) }.join(", ")}\n"
-          target_collection = drop.pick_category(client: @openai_client, collections: Collection.all)
-          if target_collection.nil?
-            puts pastel.red("No target collection found for #{drop.title}\nDrop id: #{drop.id}/#{drop._id}  #{pastel.bold(drop.title)}")
-            binding.pry # rubocop:disable Lint/Debugger
-            next
-          end
-          puts "drop.note: #{pastel.red.bold(drop.note)}\n"
+      print "Contine [enter], (r)eload collections, (u)se different url, (m)ove to another collection, (f)ix summary, (d)ebug, dele(t)e drop - for later recat, (q)uit : "
+
+      # design notes:
+      #  * need to adjust tags
+      #  * change category
+      #  * change summary, maybe the url is not giving useful info
+      #  * there might be tags or keywords that push to a category that we need to remember
+      #  * a way to create new tags and categories, and push past and future categorizations to them
+      #  TODO: maybe add descriptions to categories to help guide further refinements to the llm categorization
+      # categorization based on past categorizations?
+      ans = $stdin.gets.chomp
+      case ans
+      when "d"
+        binding.pry # rubocop:disable Lint/Debugger
+        next
+      when "q"
+        exit 0
+      when "r"
+        self.class.load_all_collections
+        break
+      when "t"
+        drop.destroy
+        next
+      when "m"
+        all_categories = Collection.all.map { |c| c.title }.reject { |i| i == "" }.sort
+        new_category = prompt.select("Select a category", all_categories, per_page: 20)
+        target_collection = Collection.find_by(title: new_category)
+        drop.move_to_collection(target_collection)
+        drop.save!
+      when "u"
+        new_url = prompt.ask("Enter new url: ")
+        drop.summarize_to_note(client: openai_client, alternative_url: new_url)
+        drop.tag(client: openai_client)
+        puts "new drop.note: #{pastel.red.bold(drop.note)}\n"
+        if prompt.yes?("use new summary?")
+          all_categories = Collection.all.map { |c| c.title }.reject { |i| i == "" }
+          new_category = prompt.select("Select a category", all_categories, per_page: 20)
+          target_collection = Collection.find_by(title: new_category)
           drop.move_to_collection(target_collection)
-          puts "\n"
-
-          print "Contine [enter], (r)eload collections, (u)se different url, (m)ove to another collection, (f)ix summary, (d)ebug, dele(t)e drop - for later recat, (q)uit : "
-
-          # design notes:
-          #  * need to adjust tags
-          #  * change category
-          #  * change summary, maybe the url is not giving useful info
-          #  * there might be tags or keywords that push to a category that we need to remember
-          #  * a way to create new tags and categories, and push past and future categorizations to them
-          #  TODO: maybe add descriptions to categories to help guide further refinements to the llm categorization
-          # categorization based on past categorizations?
-          ans = $stdin.gets.chomp
-          case ans
-          when "d"
-            binding.pry # rubocop:disable Lint/Debugger
-            next
-          when "q"
-            exit 0
-          when "r"
-            self.class.load_all_collections
-            break
-          when "t"
-            drop.destroy
-            next
-          when "m"
-            all_categories = Collection.all.map { |c| c.title }.reject { |i| i == "" }.sort
-            new_category = prompt.select("Select a category", all_categories, per_page: 20)
-            target_collection = Collection.find_by(title: new_category)
-            drop.move_to_collection(target_collection)
-            drop.save!
-          when "u"
-            new_url = prompt.ask("Enter new url: ")
-            drop.summarize_to_note(client: openai_client, alternative_url: new_url)
-            drop.tag(client: openai_client)
-            puts "new drop.note: #{pastel.red.bold(drop.note)}\n"
-            if prompt.yes?("use new summary?")
-              all_categories = Collection.all.map { |c| c.title }.reject { |i| i == "" }
-              new_category = prompt.select("Select a category", all_categories, per_page: 20)
-              target_collection = Collection.find_by(title: new_category)
-              drop.move_to_collection(target_collection)
-              puts "saving..."
-              drop.save!
-            else
-              puts "exiting.."
-              exit 1
-            end
-          when "f"
-            puts "Current note: #{drop.id}/#{drop._id} #{drop.link} \n#{drop.note}"
-            ans = prompt.select("Edit current drop, or load another by _id?", %w[edit load])
-            if ans == "load"
-              print "Enter id: "
-              id = $stdin.gets.chomp
-              drop = Raindrop.find_by(_id: id)
-            end
-            binding.pry # rubocop:disable Lint/Debugger
-            drop.save!
-          when ""
-            puts "processing...\n"
-          else
-            puts "unknown command #{ans.inspect}\n\n"
-            binding.pry # rubocop:disable Lint/Debugger
-            break
-          end
-
+          puts "saving..."
           drop.save!
-          # ask to continue, or change the target collection
-          # if prompt.select("Continue or change target collection?", %w[continue change]) == "change"
-          #   all_categories = Collection.all.map { |c| c.title }.reject { |i| i == "" }
-          #   new_category = prompt.select("Select a category", all_categories, per_page: 20)
-          #   target_collection = Collection.find_by(title: new_category)
-          #   drop.move_to_collection(target_collection)
-          #   drop.save!
-          # end
-          drop.push_data!
-          puts "Updated remote with title: #{pastel.yellow(drop.title)}\n#{pastel.red.bold(drop.note)}\n#{drop.tags.map { |t| pastel.cyan(t) }.join(", ")}\n"
+        else
+          puts "exiting.."
+          exit 1
         end
+      when "f"
+        puts "Current note: #{drop.id}/#{drop._id} #{drop.link} \n#{drop.note}"
+        ans = prompt.select("Edit current drop, or load another by _id?", %w[edit load])
+        if ans == "load"
+          print "Enter id: "
+          id = $stdin.gets.chomp
+          drop = Raindrop.find_by(_id: id)
+        end
+        binding.pry # rubocop:disable Lint/Debugger
+        drop.save!
+      when ""
+        puts "processing...\n"
+      else
+        puts "unknown command #{ans.inspect}\n\n"
+        binding.pry # rubocop:disable Lint/Debugger
+        break
+      end
 
-        # drop.summarize_to_note(client: openai_client)
-        # drop.tag(client: openai_client)
-        # target_collection = drop.pick_category(client: @openai_client, collections: Collection.all)
-        # drop.move_to_collection(target_collection)
-        # drop.save!
-        # drop.push_data!
-        # binding.pry # rubocop:disable Lint/Debugger
-      end
-    when "collection"
-      case command.command
-      when "list"
-        collections = Collection.all
-        ap collections.as_json
-      else
-        warn "ERROR: Command '#{command.command}' not found\n\n"
-      end
-    when "raindrop"
-      case command.command
-      when "get"
-        ap RaindropIo::Raindrop.get(command.options[:id])
-      when "post"
-        ap RaindropIo::Raindrop.post(command.options[:id])
-      when "put"
-        ap RaindropIo::Raindrop.put(command.options[:id])
-      when "delete"
-        ap RaindropIo::Raindrop.delete(command.options[:id])
-      when "list"
-        raindrops = Raindrop.all
-        ap raindrops.as_json
-      else
-        warn "ERROR: Command '#{command.command}' not found\n\n"
-      end
-    when "user"
-      case command.command
-      when "delete"
-        ap RaindropIo::User.delete(command.options[:id])
-      when "current_user"
-        ap RaindropIo::User.current_user
-      else
-        warn "ERROR: Command '#{command.command}' not found\n\n"
-      end
-    else
-      puts "ERROR: command '#{command.object}' not found\n\n"
+      drop.save!
+      # ask to continue, or change the target collection
+      # if prompt.select("Continue or change target collection?", %w[continue change]) == "change"
+      #   all_categories = Collection.all.map { |c| c.title }.reject { |i| i == "" }
+      #   new_category = prompt.select("Select a category", all_categories, per_page: 20)
+      #   target_collection = Collection.find_by(title: new_category)
+      #   drop.move_to_collection(target_collection)
+      #   drop.save!
+      # end
+      drop.push_data!
+      puts "Updated remote with title: #{pastel.yellow(drop.title)}\n#{pastel.red.bold(drop.note)}\n#{drop.tags.map { |t| pastel.cyan(t) }.join(", ")}\n"
     end
   end
-end
+
+  def uncategorized_drops
+    rel = Raindrop.where("collection ->> 'oid' = ?", "-1")
+    if block_given?
+      rel.each do |drop|
+        yield drop
+      end
+    else
+      rel
+    end
+  end
+
+  def drops_without_notes
+    rel = Raindrop.where("note IS NULL or note = ''")
+    if block_given?
+      rel.each do |drop|
+        yield drop
+      end
+    else
+      rel
+    end
+  end
+
+  def drops_withou_tags
+    rel = Raindrop.where("tags IS NULL or tags = '[]'")
+    if block_given?
+      rel.each do |drop|
+        yield drop
+      end
+    else
+      rel
+    end
+  end
+
+  def main
+    loop do
+      prompt = TTY::Prompt.new
+      puts pastel.yellow.bold("\n\nNote that load is an action that loads from the remote API, and list is an action that lists the local database.\n\n")
+      action = prompt.select("Choose an action", enum: ".", per_page: 30, cycle: true) do |menu|
+        menu.choice "repl"
+        menu.choice "load raindrops"
+        menu.choice "list raindrops"
+        menu.choice "load collections"
+        menu.choice "list collections"
+        menu.choice "categorize drops"
+        menu.choice "show user"
+        menu.choice "exit"
+      end
+
+      case action
+      when "repl"
+        %w[uncategorized_drops drops_without_notes drops_withou_tags].each do |method|
+          puts pastel.green.bold("#{method}.each { |drop| } ")
+        end
+        binding.pry # rubocop:disable Lint/Debugger
+      when "load raindrops"
+        drops = self.class.load_all_raindrops_in_col(-1)
+        binding.pry # rubocop:disable Lint/Debugger
+      when "list raindrops"
+        raindrops = Raindrop.all
+        pager = TTY::Pager.new
+        pager.page(raindrops.as_json.ai)
+        binding.pry # rubocop:disable Lint/Debugger
+      when "load collections"
+        collections = self.class.load_all_collections
+        ap collections
+        binding.pry # rubocop:disable Lint/Debugger
+      when "list collections"
+        collections = Collection.all
+        pager = TTY::Pager.new
+        pager.page(collections.as_json.ai)
+        puts collections.map { |c| "c.id: #{c.id}, c._id: #{c._id}, c.title: #{c.title}" }.join("\n")
+        # TODO, generate the collections in the nested format, and display them in a tree format
+        binding.pry # rubocop:disable Lint/Debugger
+      when "categorize drops"
+        categorize_drops
+      when "show user"
+        cur_user = RaindropIo::User.current_user
+        ap cur_user
+        binding.pry # rubocop:disable Lint/Debugger
+      when "exit"
+        exit 0
+      else
+        puts "Unknown action: #{action}"
+      end # case
+    end # loop
+  end # main
+end # Processor
 
 processor = Processor.new(command)
 processor.main
