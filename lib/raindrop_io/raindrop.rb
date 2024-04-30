@@ -58,6 +58,14 @@ module RaindropIo
 
       # Remove raindrop
       # DELETE https://api.raindrop.io/rest/v1/raindrop/{id}
+      def remove(raindrop_id)
+        response = delete("/raindrop/#{raindrop_id}")
+        if response.status.success?
+          true
+        else
+          RaindropIo::ApiError.new response
+        end
+      end
 
       # Upload file
       # PUT https://api.raindrop.io/rest/v1/raindrop/file

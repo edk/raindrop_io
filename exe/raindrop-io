@@ -19,7 +19,7 @@ require "poppler"
 require "net/http"
 require "uri"
 require "open-uri"
-require "tanakai"
+require "puppeteer-ruby"
 require "cgi"
 require "yt"
 
@@ -161,6 +161,10 @@ class Raindrop < ActiveRecord::Base
     end
   end
 
+  def user_agent
+    user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"
+  end
+
   def scrape_url(url, debug: false)
     source_url = URI.parse(url)
     response = fetch_uri(source_url)
@@ -169,32 +173,33 @@ class Raindrop < ActiveRecord::Base
     content_type = response["content-type"]
     if /forbidden/i.match?(response.message) ||
         /You need to enable JavaScript/i.match?(response.body)
-      use_puppeteer = true
+      use_headless_browser = true
       force_html = true
       content_type = "text/html"
     else
-      use_puppeteer = false
+      use_headless_browser = false
       force_html = false
     end
-    puts "DEBUG: content_type: #{content_type} force_html: #{force_html} use_puppeteer: #{use_puppeteer}"
+    puts "DEBUG: content_type: #{content_type} force_html: #{force_html} use_headless_browser: #{use_headless_browser}"
 
     case content_type
     when %r{text/html}
-      if !use_puppeteer
+      if !use_headless_browser
         Readability::Document.new(response.body).content
       else
         content = nil
+        # TODO remove puppeteer and use tanakai
         Puppeteer.launch(headless: true, args: ["--enable-javascript"]) do |browser|
-          page = browser.pages.first || browser.new_page
-          user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"
+          page = browser.new_page
+          page.viewport = Puppeteer::Viewport.new(width: 1280, height: 800)
           page.user_agent = user_agent
-          response = page.goto(url)
+          response = page.goto(url, wait_until: "domcontentloaded")
           if response.status != 200
             puts "Failed to load page: #{response.status}"
             binding.pry # rubocop:disable Lint/Debugger
             return nil
           end
-          page.wait_for_timeout(3000) # Wait for JavaScript to execute
+          # page.wait_for_timeout(3000) # Wait for JavaScript to execute
           # page.wait_for_navigation(wait_until: "networkidle0")
           content = page.evaluate("() => document.body.innerHTML")
         end
@@ -202,8 +207,21 @@ class Raindrop < ActiveRecord::Base
         content = Readability::Document.new(content).content
       end
     when "application/pdf"
-      file = URI.open(url)
+      uri = URI(url)
+      file = Tempfile.new("download", encoding: "ascii-8bit")
+      Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https") do |http|
+        request = Net::HTTP::Get.new uri
+        http.request request do |response|
+          response.read_body do |chunk|
+            file.write chunk
+          end
+        end
+      end
+      file.rewind
+
       pdf = Poppler::Document.new(file.path)
+      file.close
+      file.unlink
       pdf.map do |page|
         page.get_text
       end.join("\n")
