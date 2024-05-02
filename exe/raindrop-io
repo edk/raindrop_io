@@ -12,6 +12,7 @@ require "active_record"
 require "openai"
 require "tty-prompt"
 require "tty-table"
+require "tty-tree"
 require "tty-pager"
 require "pastel"
 require "readability"
@@ -68,15 +69,56 @@ end
 class Collection < ActiveRecord::Base
   self.inheritance_column = nil
 
+  # references to other collections are via _id not id
+  def children
+    Collection.where("CAST(parent ->> '$id' AS INTEGER) = ?", _id)
+  end
+
+  # the parent link is a json object with $id and $ref keys.  the "$id" is the _id of the parent collection
+  def parent_link
+    parent_id = parent && parent["$id"]
+    Collection.find_by(_id: parent_id)
+  end
+
+  def parents_chain
+    parents_chain = []
+    current_node = self
+    while current_node.parent_link.present?
+      parents_chain << current_node.parent_link
+      current_node = current_node.parent_link
+    end
+    parents_chain.reverse
+  end
+
+  def self.roots
+    Collection.where(parent: nil)
+  end
+
+  def self.test
+    leafs = leaf_nodes
+    leafs.each do |leaf|
+      parents = leaf.parents_chain.map(&:title).reject { |i| i == "" }
+      line = parents << leaf.title
+      puts line.join(" > ")
+    end
+  end
+
+  def self.leaf_nodes
+    all.reject { |c| c.children.count > 0 }
+  end
+
   def self.do_migration
     collection_attrs = {
-      int_fields: %w[_id count sort],
+      int_fields: %w[_id count sort parent_link_id],
       string_fields: %w[color created lastUpdate title view description],
       bool_fields: %w[expanded public],
       object_fields: %w[access collaborators cover parent user creatorRef],
       extra_fields: %w[broken cache file important highlights lastAction slug author extra_data]
     }
     ActiveRecord::Schema.define do
+      if table_exists?(:collections)
+        drop_table :collections
+      end
       unless table_exists?(:collections)
         create_table :collections do |t|
           attrs = collection_attrs
@@ -88,6 +130,22 @@ class Collection < ActiveRecord::Base
         end
       end
     end
+  end
+
+  def self.get_children(parent)
+    data = {}
+    parent.children.each do |child|
+      data["#{child.id} #{child.title}"] = get_children(child)
+    end
+    data
+  end
+
+  def self.get_tree
+    data = {}
+    Collection.roots.each do |node|
+      data["#{node._id} #{node.title}"] = get_children(node)
+    end
+    TTY::Tree.new(data)
   end
 end
 
@@ -162,7 +220,7 @@ class Raindrop < ActiveRecord::Base
   end
 
   def user_agent
-    user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"
   end
 
   def scrape_url(url, debug: false)
@@ -331,7 +389,7 @@ class Raindrop < ActiveRecord::Base
 
   def pick_category(client:, collections:)
     cleaned_collections = collections.map(&:title).compact.reject { |i| i == "" || i == "Unread" }
-    sys_prompt = "Given the title, the link and other information from a bookmark, categorize the following text into one of the following categories: #{cleaned_collections.join(", ")}\nRespond with ONLY the category from the list above, with no extra formatting or words.  If none apply, use 'unknown'."
+    sys_prompt = "You are an expert in categorizing and understanding how to organize bookmarks.  Given the title, the link and other metadata from a bookmark, categorize the following text into one of the following categories: #{cleaned_collections.join(", ")}\nRespond with ONLY the category from the list above, with no extra formatting or words.  If none apply, use 'unknown'."
     prompt = "title: #{title}\nlink: #{link}\nexcerpt: #{excerpt}\nnote: #{note}\ndomain: #{domain}"
     response = client.chat(
       parameters: {
@@ -418,6 +476,14 @@ class Raindrop < ActiveRecord::Base
     else
       puts "Failed to update raindrop. #{resp.inspect}"
     end
+  end
+
+  def process!(client:)
+    summarize_to_note(client: client)
+    tag(client: client)
+    target_collection = pick_category(client: client, collections: Collection.all)
+    move_to_collection(target_collection)
+    push_data!
   end
 end
 
@@ -562,13 +628,24 @@ class Processor
           end
         else
           puts "Duplicate link, skipping _id: #{drop._id} #{drop.link}"
-          logger.debug "Duplicate link, skipping _id: #{drop._id} #{drop.link}"
+          $logger.debug "Duplicate link, skipping _id: #{drop._id} #{drop.link}" # rubocop:disable Style/GlobalVars
         end
       end
       ap "Page: #{page} of #{total_pages}.  Raindrop.count: #{::Raindrop.count}"
-      logger.debug "Page: #{page} of #{total_pages}.  Raindrop.count: #{::Raindrop.count}"
+      $logger.debug "Page: #{page} of #{total_pages}.  Raindrop.count: #{::Raindrop.count}" # rubocop:disable Style/GlobalVars
     end
     rv
+  end
+
+  def self.handle_blank_titles(known_attrs)
+    case known_attrs["_id"]
+    when 0
+      known_attrs["title"] = "Unsorted"
+    when -1
+      known_attrs["title"] = "Unread"
+    when -99
+      known_attrs["title"] = "Trash"
+    end
   end
 
   def self.load_all_collections(delay: 2)
@@ -581,6 +658,7 @@ class Processor
         known_attrs = data.select { |k, v| column_names.include?(k) }
         unknown_attrs = data.except(*column_names)
         known_attrs["extra_data"] = unknown_attrs
+        handle_blank_titles(known_attrs)
         Collection.create!(known_attrs)
         # sleep delay
       else
@@ -607,22 +685,8 @@ class Processor
     uncategorized_drops.each do |drop|
       n += 1
       puts "\n\n\n\n(#{n}/#{uncategorized_drops.size}, #{uncategorized_drops.size - n} left) id: #{drop.id} #{pastel.yellow.bold(drop.title)} - #{drop.link}"
-
-      drop.summarize_to_note(client: openai_client)
-      drop.tag(client: openai_client)
-      puts "tags: #{drop.tags.map { |t| pastel.cyan.bold(t) }.join(", ")}\n"
-      target_collection = drop.pick_category(client: @openai_client, collections: Collection.all)
-      if target_collection.nil?
-        puts pastel.red("No target collection found for #{drop.title}\nDrop id: #{drop.id}/#{drop._id}  #{pastel.bold(drop.title)}")
-        binding.pry # rubocop:disable Lint/Debugger
-        next
-      end
-      puts "drop.note: #{pastel.red.bold(drop.note)}\n"
-      drop.move_to_collection(target_collection)
-      puts "\n"
-
-      print "Contine [enter], (r)eload collections, (u)se different url, (m)ove to another collection, (f)ix summary, (d)ebug, dele(t)e drop - for later recat, (q)uit : "
-
+      drop.process!(client: openai_client)
+      print "(u)se different url, (m)ove to another collection: "
       # design notes:
       #  * need to adjust tags
       #  * change category
@@ -633,17 +697,6 @@ class Processor
       # categorization based on past categorizations?
       ans = $stdin.gets.chomp
       case ans
-      when "d"
-        binding.pry # rubocop:disable Lint/Debugger
-        next
-      when "q"
-        exit 0
-      when "r"
-        self.class.load_all_collections
-        break
-      when "t"
-        drop.destroy
-        next
       when "m"
         all_categories = Collection.all.map { |c| c.title }.reject { |i| i == "" }.sort
         new_category = prompt.select("Select a category", all_categories, per_page: 20)
@@ -666,35 +719,10 @@ class Processor
           puts "exiting.."
           exit 1
         end
-      when "f"
-        puts "Current note: #{drop.id}/#{drop._id} #{drop.link} \n#{drop.note}"
-        ans = prompt.select("Edit current drop, or load another by _id?", %w[edit load])
-        if ans == "load"
-          print "Enter id: "
-          id = $stdin.gets.chomp
-          drop = Raindrop.find_by(_id: id)
-        end
-        binding.pry # rubocop:disable Lint/Debugger
-        drop.save!
-      when ""
-        puts "processing...\n"
-      else
-        puts "unknown command #{ans.inspect}\n\n"
-        binding.pry # rubocop:disable Lint/Debugger
-        break
       end
 
       drop.save!
-      # ask to continue, or change the target collection
-      # if prompt.select("Continue or change target collection?", %w[continue change]) == "change"
-      #   all_categories = Collection.all.map { |c| c.title }.reject { |i| i == "" }
-      #   new_category = prompt.select("Select a category", all_categories, per_page: 20)
-      #   target_collection = Collection.find_by(title: new_category)
-      #   drop.move_to_collection(target_collection)
-      #   drop.save!
-      # end
       drop.push_data!
-      puts "Updated remote with title: #{pastel.yellow(drop.title)}\n#{pastel.red.bold(drop.note)}\n#{drop.tags.map { |t| pastel.cyan(t) }.join(", ")}\n"
     end
   end
 
@@ -765,11 +793,11 @@ class Processor
         ap collections
         binding.pry # rubocop:disable Lint/Debugger
       when "list collections"
-        collections = Collection.all
-        pager = TTY::Pager.new
-        pager.page(collections.as_json.ai)
-        puts collections.map { |c| "c.id: #{c.id}, c._id: #{c._id}, c.title: #{c.title}" }.join("\n")
-        # TODO, generate the collections in the nested format, and display them in a tree format
+        # collections = Collection.all
+        # pager = TTY::Pager.new
+        # pager.page(collections.as_json.ai)
+        # puts collections.map { |c| "c.id: #{c.id}, c._id: #{c._id}, c.title: #{c.title}" }.join("\n")
+        Collection.test
         binding.pry # rubocop:disable Lint/Debugger
       when "categorize drops"
         categorize_drops

@@ -238,6 +238,7 @@ GEM
       pastel (~> 0.8)
       strings (~> 0.2.0)
       tty-screen (~> 0.8)
+    tty-tree (0.4.0)
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
     unicode-display_width (2.5.0)
@@ -287,6 +288,7 @@ DEPENDENCIES
   tty-pager
   tty-prompt
   tty-table
+  tty-tree
   vcr
   webmock
   webrick
