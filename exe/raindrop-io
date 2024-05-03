@@ -66,6 +66,10 @@ RaindropIo::Api.configure do |config|
   config.logger = $logger # rubocop:disable Style/GlobalVars
 end
 
+class SkipRaindrop < StandardError; end
+
+class DeleteRaindrop < StandardError; end
+
 class Collection < ActiveRecord::Base
   self.inheritance_column = nil
 
@@ -92,6 +96,10 @@ class Collection < ActiveRecord::Base
 
   def self.roots
     Collection.where(parent: nil)
+  end
+
+  def print_with_full_path
+    [parents_chain.map(&:title).compact << title].compact.join(" > ")
   end
 
   def self.test
@@ -147,6 +155,10 @@ class Collection < ActiveRecord::Base
     end
     TTY::Tree.new(data)
   end
+
+  def remove!
+    RaindropIo::Collection.remove(_id)
+  end
 end
 
 # | \_id             | `Integer`       | The id of the collection.
@@ -171,6 +183,10 @@ end
 class Raindrop < ActiveRecord::Base
   self.inheritance_column = nil
 
+  def remove!
+    RaindropIo::Raindrop.remove(_id)
+  end
+
   def self.do_migration
     raindrop_attrs = {
       int_fields: %w[_id count sort collectionId],
@@ -193,6 +209,10 @@ class Raindrop < ActiveRecord::Base
     end
   end
 
+  def collection_link
+    Collection.find_by(_id: collectionId)
+  end
+
   def resolve_uri(base_uri, new_location)
     new_location.tr!("\\", "/")
     return URI(new_location) if new_location.start_with?("http")
@@ -207,7 +227,12 @@ class Raindrop < ActiveRecord::Base
     request = Net::HTTP::Get.new(uri.request_uri)
     request["User-Agent"] = ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"]
 
-    response = http.request(request)
+    begin
+      response = http.request(request)
+    rescue Net::OpenTimeout, Net::ReadTimeout
+      puts pastel.red("Timeout fetching #{uri}")
+      raise
+    end
 
     case response
     when Net::HTTPSuccess
@@ -220,17 +245,53 @@ class Raindrop < ActiveRecord::Base
   end
 
   def user_agent
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"
+    # "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:125.0) Gecko/20100101 Firefox/125.0"
   end
 
-  def scrape_url(url, debug: false)
-    source_url = URI.parse(url)
-    response = fetch_uri(source_url)
+  def prompt
+    TTY::Prompt.new
+  end
 
-    binding.pry if debug # rubocop:disable Lint/Debugger
-    content_type = response["content-type"]
-    if /forbidden/i.match?(response.message) ||
+  def pastel
+    Pastel.new
+  end
+
+  def parse_metadata_from_html(html)
+    doc = Nokogiri::HTML(html)
+    title = doc.at_css("title").text
+    description = doc.at_css("meta[name='description']")&.attr("content")
+    keywords = doc.at_css("meta[name='keywords']")&.attr("content")
+    author = doc.at_css("meta[name='author']")&.attr("content")
+    date = doc.at_css("meta[name='date']")&.attr("content")
+    {title: title, description: description, keywords: keywords, author: author, date: date}
+  end
+
+  def scrape_url(url, debug: false, force_html: false)
+    source_url = URI.parse(url)
+
+    begin
+      response = fetch_uri(source_url)
+    rescue OpenSSL::SSL::SSLError
+      puts "SSL error: #{url}"
+      if prompt.yes?("Skip this raindrop?")
+        raise SkipRaindrop.new("SSL error: #{url}")
+      end
+      if prompt.yes?("Delete this drop?")
+        raise DeleteRaindrop.new("SSL error: #{url} removed and destroyed drop")
+      end
+    rescue Net::OpenTimeout, Net::ReadTimeout
+      force_html = true # rubocop:disable Lint/ShadowedArgument
+    end
+
+    content_type = response["content-type"] if response
+
+    if force_html
+      use_headless_browser = true
+      content_type = "text/html"
+    elsif /forbidden/i.match?(response.message) ||
         /You need to enable JavaScript/i.match?(response.body)
+      puts "DEBUG: response.message: #{response.message}"
       use_headless_browser = true
       force_html = true
       content_type = "text/html"
@@ -243,26 +304,92 @@ class Raindrop < ActiveRecord::Base
     case content_type
     when %r{text/html}
       if !use_headless_browser
-        Readability::Document.new(response.body).content
+        begin
+          Readability::Document.new(response.body, encoding: "UTF-8").content
+        rescue
+          binding.pry
+        end
       else
         content = nil
-        # TODO remove puppeteer and use tanakai
-        Puppeteer.launch(headless: true, args: ["--enable-javascript"]) do |browser|
+        puppeteer_args = [
+          "--enable-javascript",
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--user-agent='#{user_agent}'"
+        ]
+        Puppeteer.launch(headless: true, args: puppeteer_args) do |browser|
           page = browser.new_page
-          page.viewport = Puppeteer::Viewport.new(width: 1280, height: 800)
+          page.viewport = Puppeteer::Viewport.new(width: 1301, height: 823)
           page.user_agent = user_agent
-          response = page.goto(url, wait_until: "domcontentloaded")
-          if response.status != 200
+
+          # look for cookie files under ./cookies that match the domain
+          uri = URI.parse(url)
+          cookie_file = File.join("cookies", "#{uri.host}.json")
+          if File.exist?(cookie_file)
+            puts "Loading cookies from file: #{cookie_file}"
+            raw_cookies = JSON.parse(File.read(cookie_file))
+            cookies = raw_cookies.map do |raw_cookie|
+              # Map the raw cookie format to the expected format
+              {
+                name: raw_cookie["Name raw"],
+                value: raw_cookie["Content raw"],
+                domain: uri.host,  # Setting domain to the URI's host
+                path: raw_cookie["Path raw"] || "/",
+                expires: raw_cookie["Expires raw"] ? Integer(raw_cookie["Expires raw"]) : nil,
+                http_only: raw_cookie["HTTP only raw"] == "true",
+                secure: raw_cookie["Send for raw"] == "true",
+                same_site: raw_cookie["SameSite raw"].to_s.downcase
+              }.compact  # This removes any nil values that might break Puppeteer's set_cookie
+            end
+
+            cookies.each do |cookie|
+              # puts "Setting cookie: #{cookie}"
+              page.set_cookie(cookie)
+            end
+          else
+            puts "No cookie file found for #{uri.host}"
+          end
+
+          begin
+            response = page.goto(url, wait_until: "networkidle0")
+          rescue Puppeteer::FrameManager::NavigationError
+            puts "DEBUG: Failed to load page, retrying with domcontentloaded"
+            begin
+              response = page.goto(url, wait_until: "domcontentloaded")
+            rescue => e
+              puts "Failed to load page: #{e.message}"
+              if prompt.yes?("Failed to load page: #{e.message} - #{id} #{url}.  destroy?")
+                remove!
+                destroy
+                raise SkipRaindrop.new("Failed to load page: #{e.message} removed and destroyed drop")
+              end
+              binding.pry # rubocop:disable Lint/Debugger
+            end
+          end
+          if response.status == 404
             puts "Failed to load page: #{response.status}"
+            raise SkipRaindrop.new("404 error - #{id} #{url}")
+          elsif response.status == 401
+            puts "Failed to load page: #{response.status}"
+            raise SkipRaindrop.new("401 error - #{id} #{url}")
+          elsif response.status != 200
+            puts "Failed to load page: #{response.status}"
+            if prompt.yes?("Failed to load page: #{response.status} - #{id} #{url}.  destroy?")
+              remove! && destroy!
+              raise SkipRaindrop.new("Failed to load page: #{response.status} - #{id} #{url}")
+            end
+            if prompt.yes?("Mark to skip?")
+              raise SkipRaindrop.new("Failed to load page: #{response.status} - #{id} #{url}")
+            end
             binding.pry # rubocop:disable Lint/Debugger
             return nil
           end
           # page.wait_for_timeout(3000) # Wait for JavaScript to execute
           # page.wait_for_navigation(wait_until: "networkidle0")
-          content = page.evaluate("() => document.body.innerHTML")
+          content = page.evaluate("() => document.body.innerText")
+          binding.pry if debug # rubocop:disable Lint/Debugger
         end
-        puts "content: #{content[0..500].inspect}"
-        content = Readability::Document.new(content).content
+        content = Readability::Document.new(content).content.squish
       end
     when "application/pdf"
       uri = URI(url)
@@ -294,15 +421,19 @@ class Raindrop < ActiveRecord::Base
 
   # given the existing raindrop, and field such as title, excerpt, type, etc
   # ask the LLM to generate a summary
-  def summarize_to_note(client:, alternative_url: nil, debug: false)
+  def summarize_to_note(client:, alternative_url: nil, debug: false, force_html: false)
     sys_prompt = "Given the title, the link and other information from a source, concisely summarize and describe the contents of the URI using the following information.  Depending on if this is a video, url, or playlist, website, etc. refer to it appropriately.  Only summarize and describe the content given for an expert.  If there is not enough information to make a decision, return 'unknown'."
+    sys_prompt = "Given the title, link, and other details from a source, describe the contents of the URI concisely and directly. Label the source type (e.g., video, website, blog, GitHub repo) and summarize the main points tailored for an expert audience. If information is insufficient to categorize or summarize, respond with 'unknown.' Avoid general phrases such as 'This content' or 'The content.' Ensure brevity as this will be used in a bookmark management system."
 
-    if link.include?("youtube.com")
-      puts Pastel.new.red.bold("Youtube link detected, extracting description.")
+    if link.include?("youtube.com") || link.include?("youtu.be")
+      puts pastel.red.bold("Youtube link detected, extracting description.")
 
       # if it's a youtube live link, extract the id
       uri = URI.parse(alternative_url || link)
-      if uri.path.include?("/live")
+      if link.include?("youtu.be")
+        yt_id = uri.path.split("/").last
+        parsed_url = {"v" => [yt_id]}
+      elsif uri.path.include?("/live")
         yt_id = uri.path.split("/").last
         parsed_url = {"v" => [yt_id]}
       else
@@ -321,6 +452,8 @@ class Raindrop < ActiveRecord::Base
         puts "No video id found in url, skipping."
         binding.pry # rubocop:disable Lint/Debugger
       end
+      puts "DEBUG: prompt: #{prompt}" if debug
+      binding.pry if debug # rubocop:disable Lint/Debugger
       response = client.chat(
         parameters: {
           model: model,
@@ -334,16 +467,20 @@ class Raindrop < ActiveRecord::Base
       self.note = response.dig("choices", 0, "message", "content")
     else # parse website
       uri = URI.parse(alternative_url || link)
-      content = scrape_url(uri.to_s, debug: debug)
+      if /github.com/.match?(uri.host)
+        puts pastel.red.bold("Github link detected.  forcing headless browser with cookies.")
+        force_html = true
+      end
+      content = scrape_url(uri.to_s, debug: debug, force_html: force_html)
       # truncate content to keep it under 3000 characters
-      binding.pry if content.nil? # rubocop:disable Lint/Debugger
+      binding.pry if content.nil? || debug # rubocop:disable Lint/Debugger
       content = content[0..3000] if content.size > 3000
       puts "DEBUG: content: #{content[0..500].inspect}" if debug
-      puts Pastel.new.yellow("Scraped content: #{content[0..500].inspect}")
+      puts pastel.yellow("Scraped content: #{content[0..500].inspect}")
     end
 
     prompt = if content
-      "Summarize the following content, refer to it as best you can, it might be a blog, weekly newsletter, a news site, an article, a github repo, etc.  Try to be concise and specific as you can, for an expert. if it is a github repo, do not mention getting an account to contribute.  Keep it short and concise as it will be added to the notes column of a bookmarks table.\n#{content}"
+      "Describe the provided content directly, identifying it as a blog, newsletter, news site, article, GitHub repo, etc. Summarize the key points succinctly for an expert reader. Exclude instructions like creating an account for contributions in the case of GitHub repos. Aim for a brief, precise description suitable for the notes column in a bookmarks table.\n\n#{content}"
     else
       "title: #{title}\nurl: #{link}\nexcerpt: #{excerpt}\nnote: #{note}\n"
     end
@@ -361,6 +498,22 @@ class Raindrop < ActiveRecord::Base
     self.note = response.dig("choices", 0, "message", "content")
   end
 
+  def process!(client:, debug: false)
+    puts pastel.yellow.bold("Processing raindrop #{id} - #{title}\nlink: #{pastel.red.bold(link)}")
+    summarize_to_note(client: client, debug: debug)
+    if /unknown/i.match?(note)
+      puts "note is unknown, retrying with browser"
+      summarize_to_note(client: client, force_html: true)
+    end
+    puts "note: #{note}"
+    tag(client: client)
+    puts "tags: #{pastel.green.bold(tags.join(", "))}"
+    target_collection = pick_category(client: client, collections: Collection.all)
+    move_to_collection(target_collection)
+    push_data!
+    save!
+  end
+
   # @todo:
   # retag existing bookmarks
   def retag(raindrops)
@@ -371,7 +524,7 @@ class Raindrop < ActiveRecord::Base
   # given the existing raindrop, and field such as title, excerpt, type, etc
   # ask the LLM to generate a set of tags
   def tag(client:)
-    sys_prompt = "Given the title, the link and other information from a bookmark, generate a set of tags for the following text.  however, strive to keep the number of tags to a minimum, if there are multiple tags within the same area, chose a tag that cover the most, to keep the number of tags down. Do not generate empty, overly broad or meaningless tags that do not help find the content of this bookmark. for multi-word tags, use dashes between words.  e.g. Ruby-on-Rails, vs Ruby on Rails, or Visual-Studio-Code vs Visual Studio Code, as the tagging system is word based.  If there is not enough information to make a decision, return 'unknown'."
+    sys_prompt = "Given the title, the link and other information from a bookmark, generate a set of tags using the following text.  Keep the number of tags to a minimum, if there are multiple tags within the same area, chose a tag that cover the most. Do not generate empty, overly broad or meaningless tags that do not help find the content of this bookmark. for multi-word tags, use dashes between words.  e.g. Ruby-on-Rails, vs Ruby on Rails, or Visual-Studio-Code vs Visual Studio Code, as the tagging system is word based.  If there is not enough information to make a decision, return 'unknown'."
     prompt = "#{title}\n#{link}\n#{excerpt}\n#{note}\n#{domain}"
     response = client.chat(
       parameters: {
@@ -387,10 +540,14 @@ class Raindrop < ActiveRecord::Base
     self.tags = incoming_tag.reject { |i| i =~ /^\p{Punct}$/ || i == "" }.compact
   end
 
-  def pick_category(client:, collections:)
-    cleaned_collections = collections.map(&:title).compact.reject { |i| i == "" || i == "Unread" }
-    sys_prompt = "You are an expert in categorizing and understanding how to organize bookmarks.  Given the title, the link and other metadata from a bookmark, categorize the following text into one of the following categories: #{cleaned_collections.join(", ")}\nRespond with ONLY the category from the list above, with no extra formatting or words.  If none apply, use 'unknown'."
-    prompt = "title: #{title}\nlink: #{link}\nexcerpt: #{excerpt}\nnote: #{note}\ndomain: #{domain}"
+  def pick_category(client:, collections:, ask_user_input: false)
+    cleaned_collections = collections.reject { |c| ["Unread", "Trash", "Unsorted"].include?(c.title) }
+      .map { |c| c.print_with_full_path }.sort
+
+    sys_prompt = "You are an expert in categorizing and understanding how to organize bookmarks.  Given the title, the link and other metadata from a bookmark, you can categorize text into one of the following categories.  The categories are hierarchical and the right-most category is the most specific.:\n\n" \
+    "#{cleaned_collections.join("\n")}\n\n" \
+    "Respond with ONLY the category from the list above, using the rightmost word for the category, with no extra formatting or words.  If none apply, use 'unknown'."
+    prompt = "Categorize based on the following:\ntitle: #{title}\nlink: #{link}\nexcerpt: #{excerpt}\nnote: #{note}\ndomain: #{domain}"
     response = client.chat(
       parameters: {
         model: model,
@@ -402,9 +559,10 @@ class Raindrop < ActiveRecord::Base
       }
     )
     collection_title = response.dig("choices", 0, "message", "content")
+    puts "DEBUG: collection_title: #{pastel.green.bold(collection_title)}"
     if /unknown/i.match?(collection_title)
       # ask if a new collection should be created
-      sys_prompt = "This does not currently fit any of the existing categories (#{cleaned_collections.join(", ")}).  Suggest a new category this bookmark can be filed under.  Respond with only the proposed category, it should be short, without any spaces or punctuation, with only dashes to separate words if necessary."
+      sys_prompt = "This does not currently fit any of the existing categories (#{cleaned_collections.join("\n")}).  Suggest a new category this bookmark can be filed under.  Respond with only the proposed category, it should be short, without any spaces or punctuation, with only dashes to separate words if necessary."
       response = client.chat(
         parameters: {
           model: model,
@@ -415,18 +573,44 @@ class Raindrop < ActiveRecord::Base
           temperature: 0.2
         }
       )
+      ask_user_input = true
+    end
+    if ask_user_input
       proposed_collection_title = response.dig("choices", 0, "message", "content")
-      puts "Proposed collection title: #{proposed_collection_title}, use it to create a new collection? (yes/no)"
-      answer = $stdin.gets.chomp
-      if answer == "yes"
+      prompt = TTY::Prompt.new
+      choices = [
+        {name: "Select different category", value: "select"},
+        {name: "Create new collection (#{proposed_collection_title})", value: "new"},
+        {name: "Delete raindrop (#{title})", value: "delete"},
+        {name: "Skip picking a collection", value: "skip"},
+        {name: "Debug", value: "debug"}
+      ]
+      answer = prompt.select("What would you like to do?", choices, cycle: true, per_page: 15)
+      case answer
+      when "new"
+        # creates a new collection at the base.  should we handle sub-collections?
         col = RaindropIo::Collection.create!(title: proposed_collection_title)
-        Collection.create!(title: proposed_collection_title)
-        return col
-      else
-        puts "No new collection created, dropping into debugger"
+        c = Collection.new(col.attributes)
+        c.save!
+      when "select"
+        # prompt to select a different category
+        categories = cleaned_collections
+        selected_collection = prompt.select("Select a category", categories, per_page: 50)
+        if prompt.yes?("You selected: #{selected_collection}.  Press enter to continue.")
+          collection_title = selected_collection
+          # we then continue, fall out of this block, and the Collection.find_by below will set the collection
+        end
+      when "delete"
+        remove!
+        destroy!
+      when "skip"
+        return nil
+      when "debug"
         binding.pry # rubocop:disable Lint/Debugger
       end
     end
+    # split the collection_title to grab the last word
+    collection_title = collection_title.split(">").last.strip
     col = Collection.find_by(title: collection_title)
     if col.nil?
       # create new collection
@@ -436,9 +620,19 @@ class Raindrop < ActiveRecord::Base
         # parent: {"$ref" => "collections", "$id" => parent_id, "oid" => parent_id}
       }
       puts "we are here in this exception because collection_title is #{collection_title}"
-      # we can either give choices to existing collectioons, or create a new one
-      col = RaindropIo::Collection.create!(attrs)
-      binding.pry # rubocop:disable Lint/Debugger
+      prompt = TTY::Prompt.new
+      if prompt.yes?("Create new collection: #{collection_title}")
+        col = RaindropIo::Collection.create!(attrs)
+        c = Collection.new(col.attributes)
+        c.save!
+      elsif prompt.yes?("Use a different category?")
+        categories = cleaned_collections
+        selected_collection = prompt.select("Select a category", categories, per_page: 50)
+        if prompt.yes?("You selected: #{selected_collection}.  Press enter to continue.")
+          col = Collection.find_by(title: selected_collection.split(">").last.strip)
+          return col
+        end
+      end
     end
     col
   end
@@ -446,7 +640,7 @@ class Raindrop < ActiveRecord::Base
   def move_to_collection(target_collection)
     self.collectionId = target_collection._id
     self.collection = {"$ref" => "collections", "$id" => collectionId, "oid" => collectionId}
-    puts "Moving to collection: #{Pastel.new.green.bold(target_collection.title)} (#{collection.inspect})!"
+    puts "Moving to collection: #{pastel.green.bold(target_collection.title)} (#{collection.inspect})!"
   end
 
   def suggest
@@ -460,7 +654,7 @@ class Raindrop < ActiveRecord::Base
     # update the raindrop with the new data
     resp = RaindropIo::Raindrop.update(_id, data: attributes.except(:id, "id"))
     if resp.is_a?(RaindropIo::Raindrop)
-      puts Pastel.new.green("Successfully updated raindrop, #{resp.attributes["title"]}")
+      puts pastel.green("Successfully updated raindrop, #{resp.attributes["title"]}")
       # assign attributes from the resposne raindrop to the current and save
       resp.attributes.each do |k, v|
         if has_attribute?(k)
@@ -476,14 +670,6 @@ class Raindrop < ActiveRecord::Base
     else
       puts "Failed to update raindrop. #{resp.inspect}"
     end
-  end
-
-  def process!(client:)
-    summarize_to_note(client: client)
-    tag(client: client)
-    target_collection = pick_category(client: client, collections: Collection.all)
-    move_to_collection(target_collection)
-    push_data!
   end
 end
 
@@ -748,7 +934,7 @@ class Processor
     end
   end
 
-  def drops_withou_tags
+  def drops_without_tags
     rel = Raindrop.where("tags IS NULL or tags = '[]'")
     if block_given?
       rel.each do |drop|
@@ -764,6 +950,7 @@ class Processor
       prompt = TTY::Prompt.new
       puts pastel.yellow.bold("\n\nNote that load is an action that loads from the remote API, and list is an action that lists the local database.\n\n")
       action = prompt.select("Choose an action", enum: ".", per_page: 30, cycle: true) do |menu|
+        menu.choice "process unknown drops"
         menu.choice "repl"
         menu.choice "load raindrops"
         menu.choice "list raindrops"
@@ -776,12 +963,80 @@ class Processor
 
       case action
       when "repl"
-        %w[uncategorized_drops drops_without_notes drops_withou_tags].each do |method|
+        %w[uncategorized_drops drops_without_notes drops_without_tags].each do |method|
           puts pastel.green.bold("#{method}.each { |drop| } ")
         end
         binding.pry # rubocop:disable Lint/Debugger
+      when "process unknown drops"
+        ans = prompt.select("Select an action", %w[first specific all], cycle: true)
+        last_id = nil
+        loop do
+          if ans == "specific"
+            id = prompt.ask("Enter drop id (last id: #{last_id}): ") do |q|
+              q.validate(/\d+/, "Invalid id")
+            end
+            drop = Raindrop.find(id)
+            puts "Raindrop: #{drop.title} - #{drop.link}"
+            puts "Current collection: #{drop.collection_link.title}"
+            puts "Current tags: #{pastel.green.bold(drop.tags.join(", "))}"
+            puts "Current note: #{drop.note}"
+
+            cat = drop.pick_category(client: openai_client, collections: Collection.all, ask_user_input: true)
+            if cat
+              drop.move_to_collection(cat)
+            end
+            if prompt.yes?("Update note?")
+              new_note = prompt.ask("Enter new note: ")
+              drop.note = new_note
+            end
+            if prompt.yes?("update note summary?")
+              drop.summarize_to_note(client: openai_client, debug: true)
+            end
+            drop.push_data!
+            drop.save!
+          elsif ans == "first"
+            number_to_process = 1
+            drops = drops_without_notes.first(number_to_process)
+            rv = drops.first(number_to_process).map { |drop| drop.process!(client: openai_client) }
+            last_id = drops.last.id
+            puts "Processed #{rv} drops"
+          elsif ans == "all"
+            drops = drops_without_notes
+            rv = drops.each_slice(10) do |slice|
+              slice.map do |drop|
+                if drop.extra_data["skip"] == true
+                  puts "Skipping #{drop.id} #{drop.link}"
+                else
+                  puts
+                  drop.process!(client: openai_client)
+                end
+              rescue SkipRaindrop => e
+                puts "Error: #{e}, skipping #{drop.id} #{drop.link}"
+                drop.reload
+                drop.extra_data["skip"] = true
+                drop.save
+              rescue DeleteRaindrop => e
+                puts "Error: #{e}, deleting #{drop.id} #{drop.link}"
+                drop.remove!
+                drop.destroy
+              rescue SocketError => e
+                puts "Error: #{e}, skipping #{drop.id} #{drop.link}"
+                drop.extra_data["skip"] = true
+                drop.save!
+              end
+            end
+            last_id = drops.last.id
+            puts "Processed #{rv.size} drops"
+          else
+            puts "Error: unknown action: #{ans}"
+          end
+          ans = prompt.select("\n\nSelect an action", %w[first specific exit], cycle: true)
+          if ans == "exit"
+            break
+          end
+        end
       when "load raindrops"
-        drops = self.class.load_all_raindrops_in_col(-1)
+        drops = self.class.load_all_raindrops_in_col(0)
         binding.pry # rubocop:disable Lint/Debugger
       when "list raindrops"
         raindrops = Raindrop.all
@@ -793,10 +1048,6 @@ class Processor
         ap collections
         binding.pry # rubocop:disable Lint/Debugger
       when "list collections"
-        # collections = Collection.all
-        # pager = TTY::Pager.new
-        # pager.page(collections.as_json.ai)
-        # puts collections.map { |c| "c.id: #{c.id}, c._id: #{c._id}, c.title: #{c.title}" }.join("\n")
         Collection.test
         binding.pry # rubocop:disable Lint/Debugger
       when "categorize drops"

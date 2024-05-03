@@ -86,7 +86,7 @@ module RaindropIo
       def create!(attributes)
         response = post("/collection", json: attributes)
         if response.status.success? && response.parse["item"]
-          Collection.create! response.parse["item"]
+          Collection.new response.parse["item"]
         else
           RaindropIo::ApiError.new response
         end
@@ -94,7 +94,7 @@ module RaindropIo
 
       # DELETE https://api.raindrop.io/rest/v1/collection/{id}
       # Remove an existing collection and all its descendants.
-      def destroy!(collection_id)
+      def remove(collection_id)
         response = delete("/collection/#{collection_id}")
         if response.status.success?
           response.parse
